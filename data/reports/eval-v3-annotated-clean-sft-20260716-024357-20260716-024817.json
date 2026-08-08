@@ -1,0 +1,175 @@
+{
+  "model_id": "v3-annotated-clean-sft-20260716-024357",
+  "dataset_id": "itereval-20260714-123545",
+  "split": "valid",
+  "mode": "real",
+  "reliable": true,
+  "judge": null,
+  "judge_enabled": true,
+  "samples": 16,
+  "metrics": {
+    "rouge_l_f": 0.279,
+    "bleu_1": 0.3527,
+    "bleu_2": 0.1606
+  },
+  "gaps": [
+    {
+      "prompt": "如何为地震做好家庭防护？",
+      "reference": "固定高大家具和悬挂物，热水器和柜子加固防倾倒，准备应急包，明确避险位置和撤离路线并定期演练。",
+      "prediction": "避开外墙和窗户，远离高大建筑物；不要使用电梯，尽量用楼梯逃生；关好门窗并关闭电源燃气；在室内时要迅速躲到墙角或承重墙下，避免滚落；不要跳楼，待余震再撤离。",
+      "rouge_l_f": 0.1463,
+      "judge_score": null,
+      "gap_type": "格式偏差/覆盖不足",
+      "severity": 0.8537,
+      "suggestion": "针对「如何为地震做好家庭防护？」类问题补充 3-5 条同领域不同场景 QA，让模型看到更多回答格式范例"
+    }
+  ],
+  "total_tokens": 1262,
+  "created_at": 1784141297.0314863,
+  "details": [
+    {
+      "prompt": "传染病流行期间个人如何防护？",
+      "reference": "勤洗手戴口罩，保持社交距离和室内通风，减少聚集，出现发热等症状及时就医并配合流调。",
+      "prediction": "勤洗手、戴口罩、少聚集、不随地吐痰、主动接种疫苗和定期健康监测。",
+      "rouge_l_f": 0.274,
+      "bleu_1": 0.3438,
+      "bleu_2": 0.1935,
+      "judge_error": "连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 404: Not Found"
+    },
+    {
+      "prompt": "如何在浓烟环境中安全逃生？",
+      "reference": "低姿弯腰或匍匐前进贴近地面呼吸，用湿毛巾捂口鼻，沿墙摸索寻找安全出口，随手关门延缓烟火蔓延。",
+      "prediction": "保持低姿态，沿墙壁或向地面匍匐前进，尽量减少身体暴露；用湿毛巾捂住口鼻并弯腰低姿前行，避免吸入有毒烟雾和高温热气；不要逆风奔跑，以免吸入大量有毒气体或飞溅物造成伤害。",
+      "rouge_l_f": 0.2791,
+      "bleu_1": 0.3133,
+      "bleu_2": 0.1585,
+      "judge_error": "连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 404: Not Found"
+    },
+    {
+      "prompt": "闻到燃气泄漏气味应如何处理？",
+      "reference": "立即关闭气源阀门，打开门窗通风，不要开关电器或使用明火，迅速撤离到室外安全处再拨打报修或报警电话。",
+      "prediction": "立即关闭电源和气源，打开窗户通风并远离泄漏区域；不要使用明火和电器，拨打119报警并通知燃气公司进行检查和维修。",
+      "rouge_l_f": 0.4571,
+      "bleu_1": 0.5179,
+      "bleu_2": 0.2545,
+      "judge_error": "连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 404: Not Found"
+    },
+    {
+      "prompt": "台风期间应如何防范？",
+      "reference": "留在室内远离门窗，不要外出和到海边观潮；切断危险电源，遇到危险及时拨打救援电话，服从转移安排。",
+      "prediction": "注意远离广告牌和临时搭建物；加固户外设施和家具；避开低洼易涝区域；关闭电器电源并转移贵重物品；关注气象预警信息，做好撤离准备。",
+      "rouge_l_f": 0.1818,
+      "bleu_1": 0.2063,
+      "bleu_2": 0.0484,
+      "judge_error": "连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 404: Not Found"
+    },
+    {
+      "prompt": "中暑昏迷者如何急救？",
+      "reference": "迅速转移到阴凉通风处，解开衣物用湿毛巾和扇风降温，清醒者少量多次补含盐水，昏迷或高热不退立即送医并拨打120。",
+      "prediction": "立即将患者移至阴凉通风处，解开衣扣并松开紧身衣物；用湿毛巾敷额头降温，并喝含盐水或清凉饮料；不要让其进食和喝水，避免呕吐物堵塞呼吸道；保持体温稳定，必要时送医救治。",
+      "rouge_l_f": 0.3796,
+      "bleu_1": 0.4024,
+      "bleu_2": 0.2346,
+      "judge_error": "连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 404: Not Found"
+    },
+    {
+      "prompt": "骨折后现场如何处理？",
+      "reference": "保持受伤部位不动，就地用夹板或硬物固定伤肢及上下关节，不要强行复位，注意保暖并尽快送医。",
+      "prediction": "保持伤处清洁干燥；不要随意搬动或使用夹板；避免过早负重和活动；及时就医并按医嘱固定和用药。",
+      "rouge_l_f": 0.2697,
+      "bleu_1": 0.4,
+      "bleu_2": 0.1136,
+      "judge_error": "连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 404: Not Found"
+    },
+    {
+      "prompt": "遇到危险化学品泄漏怎么办？",
+      "reference": "向上风向迅速撤离，避免接触和吸入；用湿毛巾捂口鼻，不围观不点火，及时报警并告知泄漏物种类。",
+      "prediction": "立即远离现场，报警并疏散周围人员；用湿毛巾捂住口鼻，沿安全方向撤离，并向消防队求救。",
+      "rouge_l_f": 0.3218,
+      "bleu_1": 0.4762,
+      "bleu_2": 0.2683,
+      "judge_error": "连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 404: Not Found"
+    },
+    {
+      "prompt": "震后如何防范余震？",
+      "reference": "余震可能持续较长时间，撤离时远离危房和不稳定结构，不要立即返回室内取物，按官方发布信息行动。",
+      "prediction": "尽量躲在墙角或坚固家具旁，远离外墙和高大建筑物；避开桥梁和立交桥下，不要跳楼逃生；留在室内时紧闭门窗，防止倒塌；待余震发生时迅速撤离到安全地带并有序转移。",
+      "rouge_l_f": 0.1951,
+      "bleu_1": 0.2597,
+      "bleu_2": 0.0789,
+      "judge_error": "连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 404: Not Found"
+    },
+    {
+      "prompt": "如何正确进行手部卫生？",
+      "reference": "用流动水和肥皂按七步洗手法搓洗至少20秒，无洗手条件时使用含酒精免洗手消毒剂，接触公共物品后及时清洁。",
+      "prediction": "洗手时用流动水冲洗至少20秒，搓揉双手不少于15秒；使用肥皂和流动清水或含酒精的手消毒剂；不要用手触摸眼睛、口鼻眼等部位，避免交叉污染。",
+      "rouge_l_f": 0.3866,
+      "bleu_1": 0.4853,
+      "bleu_2": 0.2537,
+      "judge_error": "连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 404: Not Found"
+    },
+    {
+      "prompt": "如何为地震做好家庭防护？",
+      "reference": "固定高大家具和悬挂物，热水器和柜子加固防倾倒，准备应急包，明确避险位置和撤离路线并定期演练。",
+      "prediction": "避开外墙和窗户，远离高大建筑物；不要使用电梯，尽量用楼梯逃生；关好门窗并关闭电源燃气；在室内时要迅速躲到墙角或承重墙下，避免滚落；不要跳楼，待余震再撤离。",
+      "rouge_l_f": 0.1463,
+      "bleu_1": 0.1558,
+      "bleu_2": 0.0263,
+      "judge_error": "连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 404: Not Found"
+    },
+    {
+      "prompt": "台风预警信号有哪几种颜色？",
+      "reference": "台风预警信号由低到高分为蓝色、黄色、橙色和红色四级，颜色越深表示台风影响越严重，应加强防范。",
+      "prediction": "台风黄色预警：沿海地区注意防范；台风橙色预警：沿海和陆地注意防范；台风红色预警：沿海和陆地加强防范。",
+      "rouge_l_f": 0.2917,
+      "bleu_1": 0.36,
+      "bleu_2": 0.2041,
+      "judge_error": "连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 404: Not Found"
+    },
+    {
+      "prompt": "使用AED自动体外除颤器的要点是什么？",
+      "reference": "开机后按语音提示贴好电极片，分析心律时不要触碰患者，提示放电时确认无人接触后按下电击键，随后继续心肺复苏。",
+      "prediction": "在操作前确保设备完好无损；按压和吹气比例为30:2；评估心率和节律后开始电击；持续胸外按压直到医生到场或恢复自主呼吸。",
+      "rouge_l_f": 0.1607,
+      "bleu_1": 0.2373,
+      "bleu_2": 0.0172,
+      "judge_error": "连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 404: Not Found"
+    },
+    {
+      "prompt": "动火作业前应办理什么手续？",
+      "reference": "必须办理动火作业许可证，清理周围可燃物，配备灭火器材和监护人员，检测确认环境安全后方可作业。",
+      "prediction": "动火作业前必须办理动火证并落实防火措施和监护人，由消防部门审批后方可进行。",
+      "rouge_l_f": 0.4096,
+      "bleu_1": 0.5135,
+      "bleu_2": 0.3333,
+      "judge_error": "连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 404: Not Found"
+    },
+    {
+      "prompt": "厨房油锅起火如何扑救？",
+      "reference": "立即关闭燃气，用锅盖盖灭隔绝空气，或倒入切好的蔬菜降温，切忌用水浇，以免热油飞溅扩大火势。",
+      "prediction": "用锅盖盖住火焰，远离火源和水源，不要用水浇，防止复燃；若火势大，迅速撤离至安全区域并报警。",
+      "rouge_l_f": 0.2889,
+      "bleu_1": 0.3556,
+      "bleu_2": 0.1591,
+      "judge_error": "连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 404: Not Found"
+    },
+    {
+      "prompt": "请给出避险建议\n场景：夜间露营遭遇山洪",
+      "reference": "夜间暴雨引发山洪时应立即向高处转移，携带照明设备，远离河道和低洼处，不要贸然涉水，保持与外界联系。",
+      "prediction": "在山洪来临前远离营地并迅速向两侧山坡转移；不要停留在低洼地带和沟谷中，避免与泥石流和滑坡等灾害联防；注意观察水土保持情况，防止洪水漫过沟壑导致决堤；若发现危险迹象立即撤离并报警。",
+      "rouge_l_f": 0.1739,
+      "bleu_1": 0.2697,
+      "bleu_2": 0.0795,
+      "judge_error": "连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 404: Not Found"
+    },
+    {
+      "prompt": "家庭日常如何做好消毒？",
+      "reference": "常通风，餐具煮沸消毒，物体表面可用含氯消毒液擦拭，消毒剂不要混用，用后通风并放在儿童接触不到处。",
+      "prediction": "用75%酒精或含氯消毒剂擦拭家具和表面；注意手部卫生，勤洗手；室内通风换气并定时开窗；必要时就医。",
+      "rouge_l_f": 0.2474,
+      "bleu_1": 0.3469,
+      "bleu_2": 0.1458,
+      "judge_error": "连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 404: Not Found"
+    }
+  ]
+}

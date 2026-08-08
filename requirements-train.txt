@@ -1,0 +1,10 @@
+﻿# 可选：真实 Qwen0.5B 训练/推理依赖（本机 CPU 实测通过的版本，供参考）
+# LLaMA-Factory 会固定 transformers/peft/datasets 到兼容版本，建议按下方顺序安装。
+torch==2.13.0            # CPU: pip install torch --index-url https://download.pytorch.org/whl/cpu
+transformers==4.52.4     # 由 llamafactory 约束
+datasets==3.6.0
+accelerate==1.7.0
+peft==0.15.2
+
+# LLaMA-Factory 训练后端（backend=llamafactory / auto）
+llamafactory==0.9.3

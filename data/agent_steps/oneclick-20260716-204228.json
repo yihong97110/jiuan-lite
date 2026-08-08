@@ -1,0 +1,224 @@
+{
+  "active": true,
+  "status": "running",
+  "message": "一键推理抽检: succeeded",
+  "progress": "一键推理抽检: succeeded",
+  "task_id": "86cee54af006",
+  "params": {
+    "source_name": "生物知识",
+    "collection": "biology",
+    "iteration_prefix": "bio-v",
+    "run_biology_if_missing": true,
+    "force_biology_run": false,
+    "run_inference_probe": true,
+    "train_backend": "hf",
+    "train_device": "cpu",
+    "train_epochs": 1,
+    "train_max_seq_len": 512,
+    "eval_max_samples": 11,
+    "breadth_max_samples": 11,
+    "use_judge": "auto",
+    "kb_chunk_size": 700,
+    "poll_interval": 5.0,
+    "rag_probe": null,
+    "infer_probe": null,
+    "infer_backend": null,
+    "infer_max_new_tokens": 40
+  },
+  "started_at": 1784205748.8105452,
+  "logs": [
+    "[20:42:28] 文档 生物知识库.md 切分为 29 块",
+    "[20:42:28] 检测到同名文档，已移除旧 29 块后重新入库",
+    "[20:42:31] 知识库[biology]现有 29 块（嵌入器 tfidf）",
+    "[20:42:31] 一键推理抽检 子任务 a29b593a0670 -> pending",
+    "[20:42:36] 一键推理抽检 子任务 a29b593a0670 -> running",
+    "[20:42:51] 一键推理抽检 子任务 a29b593a0670 -> succeeded"
+  ],
+  "steps": [
+    {
+      "time": "2026-07-16 20:42:28",
+      "step": "生成/补全场景材料",
+      "status": "succeeded",
+      "summary": "生成 110 条标注源、33 条广度验证源，并重写配套知识库 Markdown。",
+      "artifacts": {
+        "source": "data/biology/生物知识.jsonl",
+        "breadth_source": "data/biology/生物知识_广度验证.jsonl",
+        "kb": "data/biology/生物知识库.md"
+      }
+    },
+    {
+      "time": "2026-07-16 20:42:31",
+      "step": "补全知识库",
+      "status": "succeeded",
+      "summary": "collection=biology 已入库 29 块，总块数 29。",
+      "artifacts": {
+        "collection": "biology",
+        "source": "生物知识库.md",
+        "total_chunks": 29
+      }
+    },
+    {
+      "time": "2026-07-16 20:42:31",
+      "step": "RAG 检索保通",
+      "status": "succeeded",
+      "summary": "检索问题“线粒体氧化磷酸化为什么需要内膜质子梯度？”，命中 3 条，最高分 0.1875。",
+      "artifacts": {
+        "top_source": "生物知识库.md",
+        "top_score": 0.1875
+      }
+    },
+    {
+      "time": "2026-07-16 20:42:31",
+      "step": "自动训练 Agent",
+      "status": "reused",
+      "summary": "已发现最新生物模型 bio-v3-生物专家-20260716-165453 和数据集 bio-v3-生物学知识-20260716-165449，本次复用既有三轮产物。",
+      "artifacts": {
+        "model_id": "bio-v3-生物专家-20260716-165453",
+        "dataset_id": "bio-v3-生物学知识-20260716-165449"
+      }
+    },
+    {
+      "time": "2026-07-16 20:42:31",
+      "step": "评测与广度报告汇总",
+      "status": "succeeded",
+      "summary": "最新评测 judge=2.727，ROUGE-L=0.2429；广度薄弱类别 9 个。",
+      "artifacts": {
+        "eval_report": "eval-bio-v3-生物专家-20260716-165453-20260716-170111",
+        "breadth_report": "breadth-bio-v3-_-20260716-165453-20260716-170356"
+      }
+    },
+    {
+      "time": "2026-07-16 20:42:51",
+      "step": "模型推理抽检",
+      "status": "succeeded",
+      "summary": "完成一次生物学问题推理，回答长度 50。",
+      "artifacts": {
+        "infer_task_id": "a29b593a0670",
+        "answer_preview": "线粒体内膜是电子传递链的起始点，而线粒体基质是电子传递链的终点。在内膜质子梯度的作用下，电子通过线粒"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "time": "2026-07-16 20:42:28",
+      "name": "标注数据源",
+      "ok": true,
+      "detail": "110/110 条，source=生物知识",
+      "artifact": "data/biology/生物知识.jsonl"
+    },
+    {
+      "time": "2026-07-16 20:42:28",
+      "name": "广度验证源",
+      "ok": true,
+      "detail": "33 条 held-out 广度样本",
+      "artifact": "data/biology/生物知识_广度验证.jsonl"
+    },
+    {
+      "time": "2026-07-16 20:42:28",
+      "name": "知识库 Markdown",
+      "ok": true,
+      "detail": "14924 字符",
+      "artifact": "data/biology/生物知识库.md"
+    },
+    {
+      "time": "2026-07-16 20:42:31",
+      "name": "RAG 知识库入库",
+      "ok": true,
+      "detail": "29 块，embedder=tfidf",
+      "artifact": "biology"
+    },
+    {
+      "time": "2026-07-16 20:42:31",
+      "name": "RAG 检索样例",
+      "ok": true,
+      "detail": "命中 3 条，最高分 0.1875",
+      "artifact": "biology"
+    },
+    {
+      "time": "2026-07-16 20:42:31",
+      "name": "最终训练数据集",
+      "ok": true,
+      "detail": "bio-v3-生物学知识-20260716-165449",
+      "artifact": ""
+    },
+    {
+      "time": "2026-07-16 20:42:31",
+      "name": "最终模型产物",
+      "ok": true,
+      "detail": "bio-v3-生物专家-20260716-165453",
+      "artifact": ""
+    },
+    {
+      "time": "2026-07-16 20:42:31",
+      "name": "固定评测报告",
+      "ok": true,
+      "detail": "report=eval-bio-v3-生物专家-20260716-165453-20260716-170111，judge=2.727，ROUGE-L=0.2429",
+      "artifact": "data/reports/eval-bio-v3-生物专家-20260716-165453-20260716-170111.json"
+    },
+    {
+      "time": "2026-07-16 20:42:31",
+      "name": "广度 Judge 报告",
+      "ok": true,
+      "detail": "report=breadth-bio-v3-_-20260716-165453-20260716-170356，薄弱类别=9",
+      "artifact": "data/reports/breadth-bio-v3-_-20260716-165453-20260716-170356.json"
+    },
+    {
+      "time": "2026-07-16 20:42:51",
+      "name": "模型推理抽检",
+      "ok": true,
+      "detail": "answer_len=50，task=a29b593a0670",
+      "artifact": ""
+    }
+  ],
+  "problems": [
+    {
+      "kind": "评测质量",
+      "detail": "最新 judge_avg=2.727，仍低于 3.5，说明专业回答完整性还不稳定。",
+      "suggestion": "下一轮优先扩充低分 prompt 的同领域变体，并提高机制/证据/应用三段式答案比例。"
+    },
+    {
+      "kind": "字面指标",
+      "detail": "最新 ROUGE-L=0.2429，与参考答案的覆盖重合仍偏低。",
+      "suggestion": "继续补充标准答案风格样本；评测时保留 LLM-as-Judge，避免只按字面重合判断。"
+    },
+    {
+      "kind": "验证集广度",
+      "detail": "最新广度分析仍有 9 个薄弱类别：生态学、植物学、分子遗传学、微生物学、生物化学、进化生物学、生理学、生物安全与伦理",
+      "suggestion": "让 judge 继续按类别扩展 held-out 验证集，并把低分类别转成下一轮标注任务。"
+    }
+  ],
+  "kb_collection": "biology",
+  "source": "data/biology/生物知识.jsonl",
+  "breadth_source": "data/biology/生物知识_广度验证.jsonl",
+  "kb_source": "data/biology/生物知识库.md",
+  "final_model_id": "bio-v3-生物专家-20260716-165453",
+  "final_dataset_id": "bio-v3-生物学知识-20260716-165449",
+  "eval_dataset_id": "bio-v广度验证-20260716-163517",
+  "eval_report_id": "eval-bio-v3-生物专家-20260716-165453-20260716-170111",
+  "breadth_report_id": "breadth-bio-v3-_-20260716-165453-20260716-170356",
+  "metrics": {
+    "rouge_l_f": 0.2429,
+    "bleu_1": 0.3779,
+    "bleu_2": 0.1724,
+    "judge_avg": 2.727
+  },
+  "package": {
+    "source": "data/biology/生物知识.jsonl",
+    "breadth_source": "data/biology/生物知识_广度验证.jsonl",
+    "kb_markdown": "data/biology/生物知识库.md",
+    "kb_collection": "biology",
+    "kb_chunks": 29,
+    "final_dataset_id": "bio-v3-生物学知识-20260716-165449",
+    "final_model_id": "bio-v3-生物专家-20260716-165453",
+    "eval_dataset_id": "bio-v广度验证-20260716-163517",
+    "eval_report_id": "eval-bio-v3-生物专家-20260716-165453-20260716-170111",
+    "breadth_report_id": "breadth-bio-v3-_-20260716-165453-20260716-170356",
+    "judge_avg": 2.727,
+    "rouge_l_f": 0.2429,
+    "breadth_issue_count": 9,
+    "rag_probe_score": 0.1875,
+    "inference_mode": "real",
+    "one_click_command": "powershell -ExecutionPolicy Bypass -File scripts/oneclick_biology.ps1"
+  },
+  "overall_ok": false
+}

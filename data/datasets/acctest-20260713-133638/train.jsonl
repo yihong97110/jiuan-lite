@@ -1,0 +1,2 @@
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "什么是应急管理？"}, {"role": "assistant", "content": "应急管理是预防和处置突发事件的组织管理活动。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "地震怎么避险？\n在室外"}, {"role": "assistant", "content": "到空旷地带远离建筑。"}]}

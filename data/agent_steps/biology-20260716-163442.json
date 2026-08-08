@@ -1,0 +1,33 @@
+{
+  "active": true,
+  "status": "running",
+  "message": "生成生物场景材料",
+  "progress": "生成生物场景材料",
+  "task_id": "68dfd4e800fe",
+  "params": {
+    "iteration_prefix": "bio-v",
+    "source_name": "????",
+    "max_iterations": 3,
+    "train_backend": "hf",
+    "train_device": "cpu",
+    "train_epochs": 1,
+    "train_max_seq_len": 512,
+    "eval_max_samples": 11,
+    "breadth_max_samples": 11,
+    "use_judge": "auto",
+    "poll_interval": 5.0
+  },
+  "started_at": 1784190882.6992671,
+  "logs": [],
+  "summaries": [],
+  "steps": [
+    {
+      "time": "2026-07-16 16:34:42",
+      "step": "异常终止",
+      "status": "failed",
+      "summary": "[Errno 22] Invalid argument: 'E:\\\\all-ex\\\\jiuan-lite\\\\data\\\\biology\\\\????.jsonl'",
+      "artifacts": {}
+    }
+  ],
+  "kb_collection": "biology"
+}

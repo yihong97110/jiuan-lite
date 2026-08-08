@@ -1,0 +1,25 @@
+{
+  "model_id": "qwen0.5b-sft-20260713-133643",
+  "dataset_id": "acctest-20260713-133638",
+  "split": "valid",
+  "mode": "real",
+  "reliable": true,
+  "samples": 1,
+  "metrics": {
+    "rouge_l_f": 0.1087,
+    "bleu_1": 0.0625,
+    "bleu_2": 0.0253
+  },
+  "total_tokens": 102,
+  "created_at": 1783921143.9962008,
+  "details": [
+    {
+      "prompt": "地震怎么避险？\n在室内",
+      "reference": "躲到承重墙角，护住头部。",
+      "prediction": "1. 选择安全的房间躲避；2. 尽量远离外墙和窗户等危险区域；3. 躲到坚固的家具下或墙角处；4. 避开高大建筑物和烟囱；5. 不要使用电梯；6. 如果有时间可以跳窗逃生。",
+      "rouge_l_f": 0.1087,
+      "bleu_1": 0.0625,
+      "bleu_2": 0.0253
+    }
+  ]
+}

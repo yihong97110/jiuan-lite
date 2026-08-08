@@ -1,0 +1,99 @@
+{
+  "workflow_id": "custom-agent-workflow-20260717",
+  "title": "通用训练 Agent",
+  "status": "implemented_and_smoke_verified",
+  "ui_entry": "http://127.0.0.1:8000/?v=custom9 -> ⑨ 通用训练 Agent",
+  "apis": {
+    "plan": "POST /agent/custom/plan",
+    "start": "POST /agent/custom/start",
+    "continue": "POST /agent/custom/continue",
+    "extend": "POST /agent/custom/extend",
+    "status": "GET /agent/custom/status"
+  },
+  "purpose": "把原来强绑定生物场景的自动训练能力扩展为任意方向可用：用户描述强化方向后，Agent 自动生成数据、验证集、知识库，并完成分轮回灌、训练、评测和广度分析。",
+  "implemented_files": [
+    "jiuan/workers/custom_agent.py",
+    "jiuan/schemas.py",
+    "jiuan/app.py",
+    "web/index.html",
+    "jiuan/common.py",
+    "jiuan/pipeline/train.py",
+    "jiuan/pipeline/infer.py"
+  ],
+  "flow": [
+    "用户输入强化方向",
+    "Agent 提取场景名和关键词",
+    "优先调用 Judge/LLM 生成结构化训练方案，失败时使用规则兜底",
+    "Agent 生成推荐参数、plan_sections 和注意事项",
+    "生成训练 source、held-out 验证源和知识库 Markdown",
+    "注册 held-out eval 数据集并防泄漏",
+    "知识库入库到指定 collection",
+    "按迭代轮数拆分样本",
+    "每轮自动创建预标注任务",
+    "可选在首轮或后续回灌前暂停为 waiting_manual，等待用户在 ⑦ 标注页修改并保存 annotation",
+    "用户点击继续运行后，读取已保存 annotation 并继续回灌训练",
+    "已完成模型可追加 n 轮迭代，并可再次开启后续人工审核",
+    "自动 commit 回灌为训练数据集",
+    "提交训练任务",
+    "可选推理抽检",
+    "固定 held-out 评测",
+    "广度分析",
+    "保存 custom-*.md/json 步骤报告"
+  ],
+  "parameter_notes": [
+    {
+      "name": "强化方向",
+      "detail": "越具体，训练样本、验证题和知识库越贴近业务目标。"
+    },
+    {
+      "name": "基底模型",
+      "detail": "大模型效果上限更高但成本更大；小模型便宜快速，适合本机 demo。"
+    },
+    {
+      "name": "数据集大小",
+      "detail": "默认 20 条用于跑通；正式训练建议扩展到数百或数千条真实业务样本。"
+    },
+    {
+      "name": "迭代轮数",
+      "detail": "默认 3 轮，能展示回灌、训练、评测、再补漏的闭环。"
+    },
+    {
+      "name": "Judge",
+      "detail": "用于生成数据和评估专业性；不可用时降级到模板生成和 ROUGE/BLEU。"
+    }
+  ],
+  "smoke_verified": {
+    "task_id": "9a6261099902",
+    "direction": "法律合同审查：识别风险条款、付款条件、违约责任和修改建议",
+    "data_generation_mode": "template",
+    "train_backend": "mock",
+    "sample_count": 6,
+    "eval_sample_count": 3,
+    "iterations": 1,
+    "kb_collection": "custom-smoke",
+    "kb_chunks": 8,
+    "dataset_id": "contract-v1-合同审查知识-20260717-164008",
+    "model_id": "contract-v1-合同审查专家-20260717-164012",
+    "metrics": {
+      "rouge_l_f": 0.1389,
+      "bleu_1": 0.2361,
+      "bleu_2": 0.0955,
+      "gap_count": 2
+    },
+    "breadth_report_id": "breadth-contract-v1-_-20260717-164012-20260717-164134",
+    "step_summary_md": "data/agent_steps/custom-20260717-164006.md"
+  },
+  "known_fixes": [
+    "新增 base_model_path 参数，使通用 Agent 可选择本地基底模型目录或 HF 名称。",
+    "mock 训练产物后续 auto 推理自动走 mock，避免不必要加载真实基座。",
+    "优化 brief 场景名提取，把“能做法律合同审查的大模型”提取为“法律合同审查”。",
+    "优化 9 号页 Agent 建议生成：从固定模板改为 Judge 结构化方案优先、规则兜底，并在前端展示 plan_source 和 plan_sections。",
+    "9 号页面与 8 号生物流程并行保留，不破坏既有生物 demo。"
+  ],
+  "next_steps": [
+    "用默认 20 条、3 轮、hf 后端跑一次正式通用 demo。",
+    "启用 Judge 生成训练样本和专业性评估。",
+    "把 impact 回灌效果验证接入通用 Agent 每轮结束阶段。",
+    "增加上传真实业务资料后自动抽取训练样本的入口。"
+  ]
+}

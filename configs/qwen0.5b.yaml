@@ -1,0 +1,80 @@
+model:
+  # Hugging Face 模型 ID：local_dir 无效时会回退到此 ID 并尝试在线读取。
+  name: Qwen/Qwen2.5-0.5B-Instruct
+  # 基底模型落盘地址，可填项目相对路径或绝对路径。该目录必须直接包含 config.json、
+  # tokenizer 文件和模型权重。Windows 推荐使用 D:/models/... 形式的正斜杠路径。
+  # LoRA 只保存增量权重，后续推理仍需要此基底模型保持可读取。
+  local_dir: data/registry/base/qwen2.5-0.5b-instruct
+train:
+  backend: hf          # auto | hf | llamafactory | mock
+  device: auto        # auto | cpu | cuda （auto: 有 GPU 用 cuda，否则 cpu）
+  precision: auto     # auto | fp32 | fp16 | bf16 （GPU 上可省显存/提速；CPU 强制 fp32）
+  method: lora        # full | lora
+  epochs: 3
+  lr: 2.0e-4
+  batch_size: 1
+  grad_accum: 1        # 小数据集用 1，保证每步都更新（大数据集可调大）
+  max_seq_len: 1024
+  save_steps: 50
+  lora:
+    r: 8
+    alpha: 16
+    dropout: 0.05
+    target_modules: [q_proj, k_proj, v_proj, o_proj]
+llamafactory:
+  template: qwen      # LLaMA-Factory 对话模板
+infer:
+  backend: transformers  # auto | transformers | vllm | mock
+  max_new_tokens: 256
+  do_sample: false      # 小模型默认贪心解码，稳定且可复现
+  temperature: 0.7      # 仅当 do_sample=true 时生效
+  top_p: 0.9
+  repetition_penalty: 1.1
+vllm:
+  base_url: http://127.0.0.1:8001/v1   # vLLM 的 OpenAI 兼容端点（Linux+GPU 上 vllm serve 起）
+  api_key: EMPTY                        # vLLM 默认无鉴权；如设了 --api-key 在此填写
+  served_model_name:                    # 留空则用模型目录名/base；与 vllm serve --served-model-name 对齐
+  timeout: 120
+eval:
+  max_samples: 20
+  use_judge: auto       # auto | true | false （auto: judge服务可达则用，否则只出ROUGE/BLEU）
+judge:
+  # LLM-as-Judge 裁判端点(OpenAI兼容)。留空 base_url 则禁用 judge。
+  # —— 云端(火山方舟 Volcengine Ark)——
+  base_url: https://ark.cn-beijing.volces.com/api/plan/v3
+  model: ark-code-latest    # 方舟 API 请求模型别名；当前具体模型为 deepseek-v4-flash
+  resolved_model: deepseek-v4-flash  # 仅用于运维展示/核对，不作为 API model 参数发送
+  api_key: ""                        # 留空则读环境变量 ARK_API_KEY
+  api_key_env: ARK_API_KEY  # 环境变量名；系统服务可在 systemd 里配置
+  probe: false            # 火山不提供 /models 探测接口；仅凭 base_url+key 判定可用
+  require_key: true       # 无 key 时视为不可用，自动回退 ROUGE/BLEU
+  timeout: 60
+  max_retries: 4       # 429 时按 2/4/8 秒退避；评测已改为整批一次请求
+  # —— 本地 vLLM 裁判(可选)：base_url: http://127.0.0.1:8001/v1, model: judge, api_key: EMPTY, probe: true, require_key: false ——
+
+annotation:
+  # 标注后端：jsonl(默认,单机零依赖) | label_studio(多人协作/审核,需部署LS)
+  backend: jsonl
+  # -- 切到 Label Studio 时填写(对标久安标注平台) --
+  # backend: label_studio
+  # ls_base_url: http://127.0.0.1:8080   # LS 服务地址
+  # ls_api_key:                          # LS 账号 API Token
+  # ls_project_id:                       # LS 项目 id(建项目后回填)
+  # webhook: /annotation/webhook/ls      # LS 完成回调指向本接口(方式B:标完即训)
+
+# LangChain Agent 对话端点（OpenAI 兼容）
+# 可指向 vLLM 本地推理服务、DeepSeek API 或其他 OpenAI 兼容端点。
+# 若不配置 base_url，自动回退到上方 judge 配置（共用同一个端点）。
+chat:
+  # -- 火山方舟 DeepSeek --
+  base_url: https://ark.cn-beijing.volces.com/api/plan/v3
+  model: deepseek-v4-flash
+  api_key: ""                         # 留空则读环境变量 ARK_API_KEY
+  # -- vLLM 本地推理（Linux+GPU，用微调后的模型提供服务）--
+  # base_url: http://127.0.0.1:8001/v1
+  # model: jiuam-model                   # 与 vllm serve --served-model-name 对齐
+  # api_key: EMPTY
+  temperature: 0.7
+  max_tokens: 1024
+  memory_window: 10                     # 滑动窗口记忆轮数（保留最近 N 轮对话，0=保留全部）
+  system_prompt: ""                     # 为空则使用代码内默认系统提示词

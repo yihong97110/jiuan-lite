@@ -1,0 +1,9 @@
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "寒潮冰冻天气如何防范？"}, {"role": "assistant", "content": "注意保暖防滑，谨慎驾车防止路面结冰打滑，防范水管冻裂和一氧化碳中毒，关注老人儿童和户外作业人员安全。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "突遇山洪如何逃生？"}, {"role": "assistant", "content": "迅速向两侧高处转移，不要沿河谷或沟道方向奔跑；已被困时抓牢固定物等待救援，切勿贸然涉水。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "发生聚集性发热疫情单位应如何处置？"}, {"role": "assistant", "content": "及时报告并做好隔离，加强通风消毒和健康监测，配合疾控开展流调和排查，暂停聚集性活动。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "一氧化碳中毒如何急救？"}, {"role": "assistant", "content": "立即将患者转移到通风处，松开衣领保持呼吸道通畅，注意保暖；昏迷或呼吸微弱者尽快送医并拨打120。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "有人溺水被救上岸后怎么办？"}, {"role": "assistant", "content": "清理口鼻异物，判断呼吸心跳，无呼吸立即进行心肺复苏，不要控水耽误抢救，同时拨打120。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "洪水中被困车辆内怎么办？"}, {"role": "assistant", "content": "水位快速上涨时尽快弃车逃生，向高处转移；车门打不开时用安全锤或头枕金属杆击碎侧窗逃出。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "地震发生时在室内应如何避险？"}, {"role": "assistant", "content": "保持冷静，就近躲到坚固家具旁或承重墙墙角，护住头颈；远离窗户和外墙；切勿乘坐电梯；震动停止后再有序撤离到空旷地带。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "危险化学品运输事故现场应如何警戒？"}, {"role": "assistant", "content": "设置足够大的警戒区并疏散下风向人员，禁止火源，救援人员穿戴防护装备，根据危险品标识采取针对性处置。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "请给出应急处置建议\n场景：车间氨气泄漏"}, {"role": "assistant", "content": "工厂车间发生氨气泄漏应向上风向撤离，用湿毛巾捂口鼻，关闭泄漏源阀门，设置警戒并立即报警告知泄漏物质。"}]}

@@ -1,0 +1,5 @@
+﻿# 控制面最小依赖（不含训练框架）
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+pyyaml>=6.0

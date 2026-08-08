@@ -1,0 +1,1035 @@
+{
+  "active": false,
+  "status": "succeeded",
+  "message": "生物专家三轮迭代完成，最终模型 bio-v3-生物专家-20260716-165453",
+  "progress": "done",
+  "task_id": "4f7a3472fb65",
+  "params": {
+    "iteration_prefix": "bio-v",
+    "source_name": "生物知识",
+    "max_iterations": 3,
+    "train_backend": "hf",
+    "train_device": "cpu",
+    "train_epochs": 1,
+    "train_max_seq_len": 512,
+    "eval_max_samples": 11,
+    "breadth_max_samples": 11,
+    "use_judge": "auto",
+    "poll_interval": 5.0
+  },
+  "started_at": 1784190917.406121,
+  "logs": [
+    "[16:36:34] bio-v1 训练 子任务 b4b6026afcc9 -> succeeded (done)",
+    "[16:36:34] bio-v1 推理 子任务 d4123756203a -> pending",
+    "[16:36:39] bio-v1 推理 子任务 d4123756203a -> running",
+    "[16:36:54] bio-v1 推理 子任务 d4123756203a -> succeeded",
+    "[16:36:54] bio-v1 评测 子任务 c72d228b848a -> pending",
+    "[16:36:59] bio-v1 评测 子任务 c72d228b848a -> running",
+    "[16:37:19] bio-v1 评测 子任务 c72d228b848a -> running (infer 1/11)",
+    "[16:37:34] bio-v1 评测 子任务 c72d228b848a -> running (infer 2/11)",
+    "[16:37:49] bio-v1 评测 子任务 c72d228b848a -> running (infer 3/11)",
+    "[16:38:09] bio-v1 评测 子任务 c72d228b848a -> running (infer 4/11)",
+    "[16:38:30] bio-v1 评测 子任务 c72d228b848a -> running (infer 5/11)",
+    "[16:38:50] bio-v1 评测 子任务 c72d228b848a -> running (infer 6/11)",
+    "[16:39:05] bio-v1 评测 子任务 c72d228b848a -> running (infer 7/11)",
+    "[16:39:15] bio-v1 评测 子任务 c72d228b848a -> running (infer 8/11)",
+    "[16:39:30] bio-v1 评测 子任务 c72d228b848a -> running (infer 9/11)",
+    "[16:39:45] bio-v1 评测 子任务 c72d228b848a -> running (infer 10/11)",
+    "[16:40:05] bio-v1 评测 子任务 c72d228b848a -> running (infer 11/11)",
+    "[16:40:15] bio-v1 评测 子任务 c72d228b848a -> running (judge 1/11)",
+    "[16:40:25] bio-v1 评测 子任务 c72d228b848a -> running (judge 2/11)",
+    "[16:40:35] bio-v1 评测 子任务 c72d228b848a -> running (judge 3/11)",
+    "[16:40:45] bio-v1 评测 子任务 c72d228b848a -> running (judge 4/11)",
+    "[16:40:50] bio-v1 评测 子任务 c72d228b848a -> running (judge 5/11)",
+    "[16:41:00] bio-v1 评测 子任务 c72d228b848a -> running (judge 6/11)",
+    "[16:41:10] bio-v1 评测 子任务 c72d228b848a -> running (judge 7/11)",
+    "[16:41:20] bio-v1 评测 子任务 c72d228b848a -> running (judge 8/11)",
+    "[16:41:35] bio-v1 评测 子任务 c72d228b848a -> running (judge 9/11)",
+    "[16:41:40] bio-v1 评测 子任务 c72d228b848a -> running (judge 10/11)",
+    "[16:41:50] bio-v1 评测 子任务 c72d228b848a -> succeeded (judge 11/11)",
+    "[16:41:50] 广度验证读取 11 条样本，类别 11 个",
+    "[16:45:57] 广度分析完成：11 个类别，薄弱类别 11 个，报告 breadth-bio-v1-_-20260716-163522-20260716-164557.json",
+    "[16:45:57] 已标注 37/37 条 → 写入 source bio-v2-生物标注-20260716-163517-committed.jsonl",
+    "[16:45:57] 读取源文件 E:\\all-ex\\jiuan-lite\\data\\annotations\\bio-v2-生物标注-20260716-163517-committed.jsonl",
+    "[16:45:57] 原始样本 37 条",
+    "[16:45:57] 继承父数据集 bio-v1-生物学知识-20260716-163519：37 条，与新增 37 条合并",
+    "[16:45:57] 开始清洗（共 74 条待处理）",
+    "[16:45:57] 清洗完成：保留 74 条(丢弃 0)，切分 train 60 / valid 14，继承自 bio-v1-生物学知识-20260716-163519 (新增 37 条)",
+    "[16:45:57] bio-v2 训练 子任务 487b715736c9 -> pending",
+    "[16:46:02] bio-v2 训练 子任务 487b715736c9 -> running",
+    "[16:46:12] bio-v2 训练 子任务 487b715736c9 -> running (1/60 steps)",
+    "[16:46:17] bio-v2 训练 子任务 487b715736c9 -> running (4/60 steps)",
+    "[16:46:22] bio-v2 训练 子任务 487b715736c9 -> running (7/60 steps)",
+    "[16:46:27] bio-v2 训练 子任务 487b715736c9 -> running (10/60 steps)",
+    "[16:46:32] bio-v2 训练 子任务 487b715736c9 -> running (12/60 steps)",
+    "[16:46:37] bio-v2 训练 子任务 487b715736c9 -> running (15/60 steps)",
+    "[16:46:42] bio-v2 训练 子任务 487b715736c9 -> running (18/60 steps)",
+    "[16:46:47] bio-v2 训练 子任务 487b715736c9 -> running (20/60 steps)",
+    "[16:46:52] bio-v2 训练 子任务 487b715736c9 -> running (23/60 steps)",
+    "[16:46:57] bio-v2 训练 子任务 487b715736c9 -> running (25/60 steps)",
+    "[16:47:02] bio-v2 训练 子任务 487b715736c9 -> running (28/60 steps)",
+    "[16:47:07] bio-v2 训练 子任务 487b715736c9 -> running (31/60 steps)",
+    "[16:47:12] bio-v2 训练 子任务 487b715736c9 -> running (33/60 steps)",
+    "[16:47:17] bio-v2 训练 子任务 487b715736c9 -> running (36/60 steps)",
+    "[16:47:22] bio-v2 训练 子任务 487b715736c9 -> running (39/60 steps)",
+    "[16:47:27] bio-v2 训练 子任务 487b715736c9 -> running (41/60 steps)",
+    "[16:47:32] bio-v2 训练 子任务 487b715736c9 -> running (44/60 steps)",
+    "[16:47:37] bio-v2 训练 子任务 487b715736c9 -> running (47/60 steps)",
+    "[16:47:42] bio-v2 训练 子任务 487b715736c9 -> running (50/60 steps)",
+    "[16:47:47] bio-v2 训练 子任务 487b715736c9 -> running (52/60 steps)",
+    "[16:47:53] bio-v2 训练 子任务 487b715736c9 -> running (55/60 steps)",
+    "[16:47:58] bio-v2 训练 子任务 487b715736c9 -> running (58/60 steps)",
+    "[16:48:03] bio-v2 训练 子任务 487b715736c9 -> succeeded (done)",
+    "[16:48:03] bio-v2 推理 子任务 2c6460309666 -> pending",
+    "[16:48:08] bio-v2 推理 子任务 2c6460309666 -> running",
+    "[16:48:28] bio-v2 推理 子任务 2c6460309666 -> succeeded",
+    "[16:48:28] bio-v2 评测 子任务 1403e48b6b17 -> pending",
+    "[16:48:33] bio-v2 评测 子任务 1403e48b6b17 -> running",
+    "[16:48:48] bio-v2 评测 子任务 1403e48b6b17 -> running (infer 1/11)",
+    "[16:48:53] bio-v2 评测 子任务 1403e48b6b17 -> running (infer 2/11)",
+    "[16:49:03] bio-v2 评测 子任务 1403e48b6b17 -> running (infer 3/11)",
+    "[16:49:08] bio-v2 评测 子任务 1403e48b6b17 -> running (infer 4/11)",
+    "[16:49:18] bio-v2 评测 子任务 1403e48b6b17 -> running (infer 5/11)",
+    "[16:49:28] bio-v2 评测 子任务 1403e48b6b17 -> running (infer 6/11)",
+    "[16:49:38] bio-v2 评测 子任务 1403e48b6b17 -> running (infer 7/11)",
+    "[16:49:48] bio-v2 评测 子任务 1403e48b6b17 -> running (infer 8/11)",
+    "[16:49:58] bio-v2 评测 子任务 1403e48b6b17 -> running (infer 9/11)",
+    "[16:50:03] bio-v2 评测 子任务 1403e48b6b17 -> running (infer 10/11)",
+    "[16:50:13] bio-v2 评测 子任务 1403e48b6b17 -> running (infer 11/11)",
+    "[16:50:18] bio-v2 评测 子任务 1403e48b6b17 -> running (judge 1/11)",
+    "[16:50:23] bio-v2 评测 子任务 1403e48b6b17 -> running (judge 2/11)",
+    "[16:50:28] bio-v2 评测 子任务 1403e48b6b17 -> running (judge 3/11)",
+    "[16:50:48] bio-v2 评测 子任务 1403e48b6b17 -> running (judge 4/11)",
+    "[16:50:53] bio-v2 评测 子任务 1403e48b6b17 -> running (judge 5/11)",
+    "[16:51:03] bio-v2 评测 子任务 1403e48b6b17 -> running (judge 6/11)",
+    "[16:51:18] bio-v2 评测 子任务 1403e48b6b17 -> running (judge 7/11)",
+    "[16:51:28] bio-v2 评测 子任务 1403e48b6b17 -> running (judge 8/11)",
+    "[16:51:38] bio-v2 评测 子任务 1403e48b6b17 -> running (judge 9/11)",
+    "[16:51:43] bio-v2 评测 子任务 1403e48b6b17 -> running (judge 10/11)",
+    "[16:51:53] bio-v2 评测 子任务 1403e48b6b17 -> succeeded (judge 11/11)",
+    "[16:51:53] 广度验证读取 11 条样本，类别 11 个",
+    "[16:54:49] 广度分析完成：11 个类别，薄弱类别 9 个，报告 breadth-bio-v2-_-20260716-164601-20260716-165449.json",
+    "[16:54:49] 已标注 36/36 条 → 写入 source bio-v3-生物标注-20260716-163517-committed.jsonl",
+    "[16:54:49] 读取源文件 E:\\all-ex\\jiuan-lite\\data\\annotations\\bio-v3-生物标注-20260716-163517-committed.jsonl",
+    "[16:54:49] 原始样本 36 条",
+    "[16:54:49] 继承父数据集 bio-v2-生物学知识-20260716-164557：74 条，与新增 36 条合并",
+    "[16:54:49] 开始清洗（共 110 条待处理）",
+    "[16:54:49] 清洗完成：保留 110 条(丢弃 0)，切分 train 88 / valid 22，继承自 bio-v2-生物学知识-20260716-164557 (新增 36 条)",
+    "[16:54:49] bio-v3 训练 子任务 71bfe6e76dbc -> pending",
+    "[16:54:54] bio-v3 训练 子任务 71bfe6e76dbc -> running",
+    "[16:55:04] bio-v3 训练 子任务 71bfe6e76dbc -> running (2/88 steps)",
+    "[16:55:09] bio-v3 训练 子任务 71bfe6e76dbc -> running (4/88 steps)",
+    "[16:55:14] bio-v3 训练 子任务 71bfe6e76dbc -> running (7/88 steps)",
+    "[16:55:19] bio-v3 训练 子任务 71bfe6e76dbc -> running (10/88 steps)",
+    "[16:55:24] bio-v3 训练 子任务 71bfe6e76dbc -> running (13/88 steps)",
+    "[16:55:29] bio-v3 训练 子任务 71bfe6e76dbc -> running (15/88 steps)",
+    "[16:55:34] bio-v3 训练 子任务 71bfe6e76dbc -> running (18/88 steps)",
+    "[16:55:39] bio-v3 训练 子任务 71bfe6e76dbc -> running (21/88 steps)",
+    "[16:55:44] bio-v3 训练 子任务 71bfe6e76dbc -> running (23/88 steps)",
+    "[16:55:49] bio-v3 训练 子任务 71bfe6e76dbc -> running (26/88 steps)",
+    "[16:55:54] bio-v3 训练 子任务 71bfe6e76dbc -> running (29/88 steps)",
+    "[16:55:59] bio-v3 训练 子任务 71bfe6e76dbc -> running (32/88 steps)",
+    "[16:56:04] bio-v3 训练 子任务 71bfe6e76dbc -> running (35/88 steps)",
+    "[16:56:09] bio-v3 训练 子任务 71bfe6e76dbc -> running (38/88 steps)",
+    "[16:56:14] bio-v3 训练 子任务 71bfe6e76dbc -> running (41/88 steps)",
+    "[16:56:19] bio-v3 训练 子任务 71bfe6e76dbc -> running (44/88 steps)",
+    "[16:56:24] bio-v3 训练 子任务 71bfe6e76dbc -> running (46/88 steps)",
+    "[16:56:29] bio-v3 训练 子任务 71bfe6e76dbc -> running (49/88 steps)",
+    "[16:56:35] bio-v3 训练 子任务 71bfe6e76dbc -> running (52/88 steps)",
+    "[16:56:40] bio-v3 训练 子任务 71bfe6e76dbc -> running (55/88 steps)",
+    "[16:56:45] bio-v3 训练 子任务 71bfe6e76dbc -> running (58/88 steps)",
+    "[16:56:50] bio-v3 训练 子任务 71bfe6e76dbc -> running (61/88 steps)",
+    "[16:56:55] bio-v3 训练 子任务 71bfe6e76dbc -> running (64/88 steps)",
+    "[16:57:00] bio-v3 训练 子任务 71bfe6e76dbc -> running (67/88 steps)",
+    "[16:57:05] bio-v3 训练 子任务 71bfe6e76dbc -> running (70/88 steps)",
+    "[16:57:10] bio-v3 训练 子任务 71bfe6e76dbc -> running (73/88 steps)",
+    "[16:57:15] bio-v3 训练 子任务 71bfe6e76dbc -> running (75/88 steps)",
+    "[16:57:20] bio-v3 训练 子任务 71bfe6e76dbc -> running (78/88 steps)",
+    "[16:57:25] bio-v3 训练 子任务 71bfe6e76dbc -> running (81/88 steps)",
+    "[16:57:30] bio-v3 训练 子任务 71bfe6e76dbc -> running (84/88 steps)",
+    "[16:57:35] bio-v3 训练 子任务 71bfe6e76dbc -> running (87/88 steps)",
+    "[16:57:40] bio-v3 训练 子任务 71bfe6e76dbc -> succeeded (done)",
+    "[16:57:40] bio-v3 推理 子任务 06bbd0dcb4d8 -> pending",
+    "[16:57:45] bio-v3 推理 子任务 06bbd0dcb4d8 -> running",
+    "[16:58:05] bio-v3 推理 子任务 06bbd0dcb4d8 -> succeeded",
+    "[16:58:05] bio-v3 评测 子任务 058f918d9218 -> pending",
+    "[16:58:10] bio-v3 评测 子任务 058f918d9218 -> running",
+    "[16:58:25] bio-v3 评测 子任务 058f918d9218 -> running (infer 1/11)",
+    "[16:58:35] bio-v3 评测 子任务 058f918d9218 -> running (infer 2/11)",
+    "[16:58:40] bio-v3 评测 子任务 058f918d9218 -> running (infer 3/11)",
+    "[16:58:50] bio-v3 评测 子任务 058f918d9218 -> running (infer 4/11)",
+    "[16:58:55] bio-v3 评测 子任务 058f918d9218 -> running (infer 5/11)",
+    "[16:59:15] bio-v3 评测 子任务 058f918d9218 -> running (infer 6/11)",
+    "[16:59:25] bio-v3 评测 子任务 058f918d9218 -> running (infer 7/11)",
+    "[16:59:30] bio-v3 评测 子任务 058f918d9218 -> running (infer 8/11)",
+    "[16:59:35] bio-v3 评测 子任务 058f918d9218 -> running (infer 9/11)",
+    "[16:59:40] bio-v3 评测 子任务 058f918d9218 -> running (infer 10/11)",
+    "[16:59:50] bio-v3 评测 子任务 058f918d9218 -> running (infer 11/11)",
+    "[16:59:55] bio-v3 评测 子任务 058f918d9218 -> running (judge 1/11)",
+    "[17:00:05] bio-v3 评测 子任务 058f918d9218 -> running (judge 2/11)",
+    "[17:00:10] bio-v3 评测 子任务 058f918d9218 -> running (judge 3/11)",
+    "[17:00:20] bio-v3 评测 子任务 058f918d9218 -> running (judge 4/11)",
+    "[17:00:35] bio-v3 评测 子任务 058f918d9218 -> running (judge 5/11)",
+    "[17:00:40] bio-v3 评测 子任务 058f918d9218 -> running (judge 6/11)",
+    "[17:00:45] bio-v3 评测 子任务 058f918d9218 -> running (judge 7/11)",
+    "[17:00:56] bio-v3 评测 子任务 058f918d9218 -> running (judge 8/11)",
+    "[17:01:01] bio-v3 评测 子任务 058f918d9218 -> running (judge 9/11)",
+    "[17:01:11] bio-v3 评测 子任务 058f918d9218 -> running (judge 10/11)",
+    "[17:01:16] bio-v3 评测 子任务 058f918d9218 -> succeeded (judge 11/11)",
+    "[17:01:16] 广度验证读取 11 条样本，类别 11 个",
+    "[17:03:56] 广度分析完成：11 个类别，薄弱类别 9 个，报告 breadth-bio-v3-_-20260716-165453-20260716-170356.json",
+    "[17:03:56] 生物专家三轮迭代完成，最终模型 bio-v3-生物专家-20260716-165453"
+  ],
+  "summaries": [
+    {
+      "iteration": 1,
+      "annotation_task": "bio-v1-生物标注-20260716-163517",
+      "dataset_id": "bio-v1-生物学知识-20260716-163519",
+      "model_id": "bio-v1-生物专家-20260716-163522",
+      "metrics": {
+        "rouge_l_f": 0.1565,
+        "bleu_1": 0.2035,
+        "bleu_2": 0.0705,
+        "judge_avg": 2.091
+      },
+      "gap_count": 9,
+      "train_task_id": "b4b6026afcc9",
+      "infer_task_id": "d4123756203a",
+      "eval_task_id": "c72d228b848a",
+      "breadth": {
+        "report_id": "breadth-bio-v1-_-20260716-163522-20260716-164557",
+        "issues": [
+          {
+            "category": "分子遗传学",
+            "samples": 1,
+            "rouge_l_f": 0.1397,
+            "bleu_1": 0.2083,
+            "bleu_2": 0.057,
+            "judge_avg": 0.0
+          },
+          {
+            "category": "植物学",
+            "samples": 1,
+            "rouge_l_f": 0.1613,
+            "bleu_1": 0.2794,
+            "bleu_2": 0.0896,
+            "judge_avg": 0.0
+          },
+          {
+            "category": "生理学",
+            "samples": 1,
+            "rouge_l_f": 0.1656,
+            "bleu_1": 0.2778,
+            "bleu_2": 0.0837,
+            "judge_avg": 0.0
+          },
+          {
+            "category": "生物安全与伦理",
+            "samples": 1,
+            "rouge_l_f": 0.1745,
+            "bleu_1": 0.2473,
+            "bleu_2": 0.0757,
+            "judge_avg": 1.0
+          },
+          {
+            "category": "生物化学",
+            "samples": 1,
+            "rouge_l_f": 0.1822,
+            "bleu_1": 0.2674,
+            "bleu_2": 0.122,
+            "judge_avg": 2.0
+          },
+          {
+            "category": "免疫学",
+            "samples": 1,
+            "rouge_l_f": 0.1934,
+            "bleu_1": 0.3053,
+            "bleu_2": 0.1341,
+            "judge_avg": 2.0
+          },
+          {
+            "category": "细胞生物学",
+            "samples": 1,
+            "rouge_l_f": 0.2253,
+            "bleu_1": 0.3132,
+            "bleu_2": 0.1286,
+            "judge_avg": 2.0
+          },
+          {
+            "category": "实验与统计",
+            "samples": 1,
+            "rouge_l_f": 0.1461,
+            "bleu_1": 0.2104,
+            "bleu_2": 0.0581,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "进化生物学",
+            "samples": 1,
+            "rouge_l_f": 0.156,
+            "bleu_1": 0.212,
+            "bleu_2": 0.073,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "生态学",
+            "samples": 1,
+            "rouge_l_f": 0.1913,
+            "bleu_1": 0.203,
+            "bleu_2": 0.0719,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "微生物学",
+            "samples": 1,
+            "rouge_l_f": 0.1581,
+            "bleu_1": 0.2927,
+            "bleu_2": 0.0738,
+            "judge_avg": 4.0
+          }
+        ],
+        "category_scores": [
+          {
+            "category": "免疫学",
+            "samples": 1,
+            "rouge_l_f": 0.1934,
+            "bleu_1": 0.3053,
+            "bleu_2": 0.1341,
+            "judge_avg": 2.0
+          },
+          {
+            "category": "分子遗传学",
+            "samples": 1,
+            "rouge_l_f": 0.1397,
+            "bleu_1": 0.2083,
+            "bleu_2": 0.057,
+            "judge_avg": 0.0
+          },
+          {
+            "category": "实验与统计",
+            "samples": 1,
+            "rouge_l_f": 0.1461,
+            "bleu_1": 0.2104,
+            "bleu_2": 0.0581,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "微生物学",
+            "samples": 1,
+            "rouge_l_f": 0.1581,
+            "bleu_1": 0.2927,
+            "bleu_2": 0.0738,
+            "judge_avg": 4.0
+          },
+          {
+            "category": "植物学",
+            "samples": 1,
+            "rouge_l_f": 0.1613,
+            "bleu_1": 0.2794,
+            "bleu_2": 0.0896,
+            "judge_avg": 0.0
+          },
+          {
+            "category": "生态学",
+            "samples": 1,
+            "rouge_l_f": 0.1913,
+            "bleu_1": 0.203,
+            "bleu_2": 0.0719,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "生物化学",
+            "samples": 1,
+            "rouge_l_f": 0.1822,
+            "bleu_1": 0.2674,
+            "bleu_2": 0.122,
+            "judge_avg": 2.0
+          },
+          {
+            "category": "生物安全与伦理",
+            "samples": 1,
+            "rouge_l_f": 0.1745,
+            "bleu_1": 0.2473,
+            "bleu_2": 0.0757,
+            "judge_avg": 1.0
+          },
+          {
+            "category": "生理学",
+            "samples": 1,
+            "rouge_l_f": 0.1656,
+            "bleu_1": 0.2778,
+            "bleu_2": 0.0837,
+            "judge_avg": 0.0
+          },
+          {
+            "category": "细胞生物学",
+            "samples": 1,
+            "rouge_l_f": 0.2253,
+            "bleu_1": 0.3132,
+            "bleu_2": 0.1286,
+            "judge_avg": 2.0
+          },
+          {
+            "category": "进化生物学",
+            "samples": 1,
+            "rouge_l_f": 0.156,
+            "bleu_1": 0.212,
+            "bleu_2": 0.073,
+            "judge_avg": 3.0
+          }
+        ]
+      }
+    },
+    {
+      "iteration": 2,
+      "annotation_task": "bio-v2-生物标注-20260716-163517",
+      "dataset_id": "bio-v2-生物学知识-20260716-164557",
+      "model_id": "bio-v2-生物专家-20260716-164601",
+      "metrics": {
+        "rouge_l_f": 0.2136,
+        "bleu_1": 0.3611,
+        "bleu_2": 0.1434,
+        "judge_avg": 2.545
+      },
+      "gap_count": 3,
+      "train_task_id": "487b715736c9",
+      "infer_task_id": "2c6460309666",
+      "eval_task_id": "1403e48b6b17",
+      "breadth": {
+        "report_id": "breadth-bio-v2-_-20260716-164601-20260716-165449",
+        "issues": [
+          {
+            "category": "微生物学",
+            "samples": 1,
+            "rouge_l_f": 0.134,
+            "bleu_1": 0.3281,
+            "bleu_2": 0.0952,
+            "judge_avg": 0.0
+          },
+          {
+            "category": "植物学",
+            "samples": 1,
+            "rouge_l_f": 0.2477,
+            "bleu_1": 0.42,
+            "bleu_2": 0.1818,
+            "judge_avg": 0.0
+          },
+          {
+            "category": "分子遗传学",
+            "samples": 1,
+            "rouge_l_f": 0.1084,
+            "bleu_1": 0.4483,
+            "bleu_2": 0.1071,
+            "judge_avg": 1.0
+          },
+          {
+            "category": "细胞生物学",
+            "samples": 1,
+            "rouge_l_f": 0.1956,
+            "bleu_1": 0.2761,
+            "bleu_2": 0.142,
+            "judge_avg": 1.0
+          },
+          {
+            "category": "生物安全与伦理",
+            "samples": 1,
+            "rouge_l_f": 0.2111,
+            "bleu_1": 0.2961,
+            "bleu_2": 0.1171,
+            "judge_avg": 2.0
+          },
+          {
+            "category": "实验与统计",
+            "samples": 1,
+            "rouge_l_f": 0.2187,
+            "bleu_1": 0.3219,
+            "bleu_2": 0.1379,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "生物化学",
+            "samples": 1,
+            "rouge_l_f": 0.2304,
+            "bleu_1": 0.3172,
+            "bleu_2": 0.1386,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "生理学",
+            "samples": 1,
+            "rouge_l_f": 0.2471,
+            "bleu_1": 0.3557,
+            "bleu_2": 0.1284,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "免疫学",
+            "samples": 1,
+            "rouge_l_f": 0.3077,
+            "bleu_1": 0.4741,
+            "bleu_2": 0.2435,
+            "judge_avg": 3.0
+          }
+        ],
+        "category_scores": [
+          {
+            "category": "免疫学",
+            "samples": 1,
+            "rouge_l_f": 0.3077,
+            "bleu_1": 0.4741,
+            "bleu_2": 0.2435,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "分子遗传学",
+            "samples": 1,
+            "rouge_l_f": 0.1084,
+            "bleu_1": 0.4483,
+            "bleu_2": 0.1071,
+            "judge_avg": 1.0
+          },
+          {
+            "category": "实验与统计",
+            "samples": 1,
+            "rouge_l_f": 0.2187,
+            "bleu_1": 0.3219,
+            "bleu_2": 0.1379,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "微生物学",
+            "samples": 1,
+            "rouge_l_f": 0.134,
+            "bleu_1": 0.3281,
+            "bleu_2": 0.0952,
+            "judge_avg": 0.0
+          },
+          {
+            "category": "植物学",
+            "samples": 1,
+            "rouge_l_f": 0.2477,
+            "bleu_1": 0.42,
+            "bleu_2": 0.1818,
+            "judge_avg": 0.0
+          },
+          {
+            "category": "生态学",
+            "samples": 1,
+            "rouge_l_f": 0.2156,
+            "bleu_1": 0.3681,
+            "bleu_2": 0.1399,
+            "judge_avg": 4.0
+          },
+          {
+            "category": "生物化学",
+            "samples": 1,
+            "rouge_l_f": 0.2304,
+            "bleu_1": 0.3172,
+            "bleu_2": 0.1386,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "生物安全与伦理",
+            "samples": 1,
+            "rouge_l_f": 0.2111,
+            "bleu_1": 0.2961,
+            "bleu_2": 0.1171,
+            "judge_avg": 2.0
+          },
+          {
+            "category": "生理学",
+            "samples": 1,
+            "rouge_l_f": 0.2471,
+            "bleu_1": 0.3557,
+            "bleu_2": 0.1284,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "细胞生物学",
+            "samples": 1,
+            "rouge_l_f": 0.1956,
+            "bleu_1": 0.2761,
+            "bleu_2": 0.142,
+            "judge_avg": 1.0
+          },
+          {
+            "category": "进化生物学",
+            "samples": 1,
+            "rouge_l_f": 0.2036,
+            "bleu_1": 0.3935,
+            "bleu_2": 0.1494,
+            "judge_avg": 4.0
+          }
+        ]
+      }
+    },
+    {
+      "iteration": 3,
+      "annotation_task": "bio-v3-生物标注-20260716-163517",
+      "dataset_id": "bio-v3-生物学知识-20260716-165449",
+      "model_id": "bio-v3-生物专家-20260716-165453",
+      "metrics": {
+        "rouge_l_f": 0.2429,
+        "bleu_1": 0.3779,
+        "bleu_2": 0.1724,
+        "judge_avg": 2.727
+      },
+      "gap_count": 2,
+      "train_task_id": "71bfe6e76dbc",
+      "infer_task_id": "06bbd0dcb4d8",
+      "eval_task_id": "058f918d9218",
+      "breadth": {
+        "report_id": "breadth-bio-v3-_-20260716-165453-20260716-170356",
+        "issues": [
+          {
+            "category": "生态学",
+            "samples": 1,
+            "rouge_l_f": 0.2479,
+            "bleu_1": 0.4771,
+            "bleu_2": 0.2407,
+            "judge_avg": 1.0
+          },
+          {
+            "category": "植物学",
+            "samples": 1,
+            "rouge_l_f": 0.1944,
+            "bleu_1": 0.2006,
+            "bleu_2": 0.0799,
+            "judge_avg": 2.0
+          },
+          {
+            "category": "分子遗传学",
+            "samples": 1,
+            "rouge_l_f": 0.2519,
+            "bleu_1": 0.391,
+            "bleu_2": 0.1818,
+            "judge_avg": 2.0
+          },
+          {
+            "category": "微生物学",
+            "samples": 1,
+            "rouge_l_f": 0.2205,
+            "bleu_1": 0.4194,
+            "bleu_2": 0.1626,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "生物化学",
+            "samples": 1,
+            "rouge_l_f": 0.2207,
+            "bleu_1": 0.3648,
+            "bleu_2": 0.1709,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "进化生物学",
+            "samples": 1,
+            "rouge_l_f": 0.2294,
+            "bleu_1": 0.4898,
+            "bleu_2": 0.1959,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "生理学",
+            "samples": 1,
+            "rouge_l_f": 0.252,
+            "bleu_1": 0.4028,
+            "bleu_2": 0.1958,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "生物安全与伦理",
+            "samples": 1,
+            "rouge_l_f": 0.2542,
+            "bleu_1": 0.3841,
+            "bleu_2": 0.1718,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "细胞生物学",
+            "samples": 1,
+            "rouge_l_f": 0.3017,
+            "bleu_1": 0.6154,
+            "bleu_2": 0.2987,
+            "judge_avg": 3.0
+          }
+        ],
+        "category_scores": [
+          {
+            "category": "免疫学",
+            "samples": 1,
+            "rouge_l_f": 0.2529,
+            "bleu_1": 0.3615,
+            "bleu_2": 0.1705,
+            "judge_avg": 4.0
+          },
+          {
+            "category": "分子遗传学",
+            "samples": 1,
+            "rouge_l_f": 0.2519,
+            "bleu_1": 0.391,
+            "bleu_2": 0.1818,
+            "judge_avg": 2.0
+          },
+          {
+            "category": "实验与统计",
+            "samples": 1,
+            "rouge_l_f": 0.266,
+            "bleu_1": 0.4839,
+            "bleu_2": 0.1957,
+            "judge_avg": 4.0
+          },
+          {
+            "category": "微生物学",
+            "samples": 1,
+            "rouge_l_f": 0.2205,
+            "bleu_1": 0.4194,
+            "bleu_2": 0.1626,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "植物学",
+            "samples": 1,
+            "rouge_l_f": 0.1944,
+            "bleu_1": 0.2006,
+            "bleu_2": 0.0799,
+            "judge_avg": 2.0
+          },
+          {
+            "category": "生态学",
+            "samples": 1,
+            "rouge_l_f": 0.2479,
+            "bleu_1": 0.4771,
+            "bleu_2": 0.2407,
+            "judge_avg": 1.0
+          },
+          {
+            "category": "生物化学",
+            "samples": 1,
+            "rouge_l_f": 0.2207,
+            "bleu_1": 0.3648,
+            "bleu_2": 0.1709,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "生物安全与伦理",
+            "samples": 1,
+            "rouge_l_f": 0.2542,
+            "bleu_1": 0.3841,
+            "bleu_2": 0.1718,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "生理学",
+            "samples": 1,
+            "rouge_l_f": 0.252,
+            "bleu_1": 0.4028,
+            "bleu_2": 0.1958,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "细胞生物学",
+            "samples": 1,
+            "rouge_l_f": 0.3017,
+            "bleu_1": 0.6154,
+            "bleu_2": 0.2987,
+            "judge_avg": 3.0
+          },
+          {
+            "category": "进化生物学",
+            "samples": 1,
+            "rouge_l_f": 0.2294,
+            "bleu_1": 0.4898,
+            "bleu_2": 0.1959,
+            "judge_avg": 3.0
+          }
+        ]
+      }
+    }
+  ],
+  "steps": [
+    {
+      "time": "2026-07-16 16:35:17",
+      "step": "生成场景材料",
+      "status": "succeeded",
+      "summary": "生成 110 条标注样本、33 条广度验证样本和配套知识库",
+      "artifacts": {
+        "source": "data/biology/生物知识.jsonl",
+        "breadth_source": "data/biology/生物知识_广度验证.jsonl",
+        "kb": "data/biology/生物知识库.md"
+      }
+    },
+    {
+      "time": "2026-07-16 16:35:17",
+      "step": "生成固定广度验证集",
+      "status": "succeeded",
+      "summary": "创建 held-out 验证集 bio-v广度验证-20260716-163517，并标记 role=eval 防止回灌泄漏",
+      "artifacts": {
+        "dataset_id": "bio-v广度验证-20260716-163517",
+        "valid_count": 29
+      }
+    },
+    {
+      "time": "2026-07-16 16:35:19",
+      "step": "补全并切换知识库",
+      "status": "succeeded",
+      "summary": "知识库 collection=biology 入库 29 块，总块数 29",
+      "artifacts": {
+        "collection": "biology",
+        "kb_source": "生物知识库.md",
+        "total_chunks": 29
+      }
+    },
+    {
+      "time": "2026-07-16 16:35:19",
+      "step": "bio-v1 标注任务",
+      "status": "succeeded",
+      "summary": "从 生物知识 自动抽取并预填 37 条标注，等待 Agent 回灌",
+      "artifacts": {
+        "annotation_task": "bio-v1-生物标注-20260716-163517",
+        "file": "data/annotations/bio-v1-生物标注-20260716-163517.jsonl"
+      }
+    },
+    {
+      "time": "2026-07-16 16:35:19",
+      "step": "bio-v1 标注回灌",
+      "status": "succeeded",
+      "summary": "回灌 37 条标注，生成训练数据集 bio-v1-生物学知识-20260716-163519，累计 37 条",
+      "artifacts": {
+        "dataset_id": "bio-v1-生物学知识-20260716-163519",
+        "parent_dataset": null,
+        "added_count": 37
+      }
+    },
+    {
+      "time": "2026-07-16 16:36:34",
+      "step": "bio-v1 模型训练",
+      "status": "succeeded",
+      "summary": "训练完成，模型 bio-v1-生物专家-20260716-163522，训练后端 hf",
+      "artifacts": {
+        "train_task_id": "b4b6026afcc9",
+        "model_id": "bio-v1-生物专家-20260716-163522",
+        "train_loss": 3.2931953112284345
+      }
+    },
+    {
+      "time": "2026-07-16 16:36:54",
+      "step": "bio-v1 推理抽检",
+      "status": "succeeded",
+      "summary": "完成一次生物学问题推理，回答长度 114 字",
+      "artifacts": {
+        "infer_task_id": "d4123756203a",
+        "prompt": "请从分子与细胞层面解释线粒体氧化磷酸化为什么需要内膜质子梯度。",
+        "answer_preview": "线粒体内膜质子梯度是产生ATP的必要条件。在内膜上，质子浓度差驱动电子传递链中的电子流动，从而产生ATP。若缺乏内膜质子梯度，电子传递链将无法正常工作，导致ATP生成受阻。因此，线粒体内的质子梯度是维持ATP合成的关键因素之一。"
+      }
+    },
+    {
+      "time": "2026-07-16 16:41:50",
+      "step": "bio-v1 固定评测",
+      "status": "succeeded",
+      "summary": "评测完成，ROUGE-L=0.1565，gap=9",
+      "artifacts": {
+        "eval_task_id": "c72d228b848a",
+        "report_id": "eval-bio-v1-生物专家-20260716-163522-20260716-164146",
+        "metrics": {
+          "rouge_l_f": 0.1565,
+          "bleu_1": 0.2035,
+          "bleu_2": 0.0705,
+          "judge_avg": 2.091
+        }
+      }
+    },
+    {
+      "time": "2026-07-16 16:45:57",
+      "step": "bio-v1 广度分析",
+      "status": "succeeded",
+      "summary": "按类别验证 11 条，薄弱类别 11 个",
+      "artifacts": {
+        "breadth_report_id": "breadth-bio-v1-_-20260716-163522-20260716-164557",
+        "issues": [
+          "分子遗传学",
+          "植物学",
+          "生理学",
+          "生物安全与伦理",
+          "生物化学",
+          "免疫学",
+          "细胞生物学",
+          "实验与统计",
+          "进化生物学",
+          "生态学",
+          "微生物学"
+        ]
+      }
+    },
+    {
+      "time": "2026-07-16 16:45:57",
+      "step": "bio-v2 标注任务",
+      "status": "succeeded",
+      "summary": "从 生物知识 自动抽取并预填 37 条标注，等待 Agent 回灌",
+      "artifacts": {
+        "annotation_task": "bio-v2-生物标注-20260716-163517",
+        "file": "data/annotations/bio-v2-生物标注-20260716-163517.jsonl"
+      }
+    },
+    {
+      "time": "2026-07-16 16:45:57",
+      "step": "bio-v2 标注回灌",
+      "status": "succeeded",
+      "summary": "回灌 37 条标注，生成训练数据集 bio-v2-生物学知识-20260716-164557，累计 74 条",
+      "artifacts": {
+        "dataset_id": "bio-v2-生物学知识-20260716-164557",
+        "parent_dataset": "bio-v1-生物学知识-20260716-163519",
+        "added_count": 37
+      }
+    },
+    {
+      "time": "2026-07-16 16:48:03",
+      "step": "bio-v2 模型训练",
+      "status": "succeeded",
+      "summary": "训练完成，模型 bio-v2-生物专家-20260716-164601，训练后端 hf",
+      "artifacts": {
+        "train_task_id": "487b715736c9",
+        "model_id": "bio-v2-生物专家-20260716-164601",
+        "train_loss": 2.394782684246699
+      }
+    },
+    {
+      "time": "2026-07-16 16:48:28",
+      "step": "bio-v2 推理抽检",
+      "status": "succeeded",
+      "summary": "完成一次生物学问题推理，回答长度 178 字",
+      "artifacts": {
+        "infer_task_id": "2c6460309666",
+        "prompt": "请从分子与细胞层面解释线粒体氧化磷酸化为什么需要内膜质子梯度。",
+        "answer_preview": "线粒体内膜质子梯度是产生ATP的必要条件。因为线粒体内膜上的ATP合成酶需要高浓度的质子梯度才能催化ATP生成。如果质子梯度过低，ATP合成酶活性降低，无法形成ATP。所以，线粒体内的质子梯度必须通过内膜进入线粒体基质，以维持ATP合成过程。这个机制可以看作是一个“信号”传递的过程：当质子梯度过低时，就触发ATP合成酶"
+      }
+    },
+    {
+      "time": "2026-07-16 16:51:53",
+      "step": "bio-v2 固定评测",
+      "status": "succeeded",
+      "summary": "评测完成，ROUGE-L=0.2136，gap=3",
+      "artifacts": {
+        "eval_task_id": "1403e48b6b17",
+        "report_id": "eval-bio-v2-生物专家-20260716-164601-20260716-165149",
+        "metrics": {
+          "rouge_l_f": 0.2136,
+          "bleu_1": 0.3611,
+          "bleu_2": 0.1434,
+          "judge_avg": 2.545
+        }
+      }
+    },
+    {
+      "time": "2026-07-16 16:54:49",
+      "step": "bio-v2 广度分析",
+      "status": "succeeded",
+      "summary": "按类别验证 11 条，薄弱类别 9 个",
+      "artifacts": {
+        "breadth_report_id": "breadth-bio-v2-_-20260716-164601-20260716-165449",
+        "issues": [
+          "微生物学",
+          "植物学",
+          "分子遗传学",
+          "细胞生物学",
+          "生物安全与伦理",
+          "实验与统计",
+          "生物化学",
+          "生理学",
+          "免疫学"
+        ]
+      }
+    },
+    {
+      "time": "2026-07-16 16:54:49",
+      "step": "bio-v3 标注任务",
+      "status": "succeeded",
+      "summary": "从 生物知识 自动抽取并预填 36 条标注，等待 Agent 回灌",
+      "artifacts": {
+        "annotation_task": "bio-v3-生物标注-20260716-163517",
+        "file": "data/annotations/bio-v3-生物标注-20260716-163517.jsonl"
+      }
+    },
+    {
+      "time": "2026-07-16 16:54:49",
+      "step": "bio-v3 标注回灌",
+      "status": "succeeded",
+      "summary": "回灌 36 条标注，生成训练数据集 bio-v3-生物学知识-20260716-165449，累计 110 条",
+      "artifacts": {
+        "dataset_id": "bio-v3-生物学知识-20260716-165449",
+        "parent_dataset": "bio-v2-生物学知识-20260716-164557",
+        "added_count": 36
+      }
+    },
+    {
+      "time": "2026-07-16 16:57:40",
+      "step": "bio-v3 模型训练",
+      "status": "succeeded",
+      "summary": "训练完成，模型 bio-v3-生物专家-20260716-165453，训练后端 hf",
+      "artifacts": {
+        "train_task_id": "71bfe6e76dbc",
+        "model_id": "bio-v3-生物专家-20260716-165453",
+        "train_loss": 1.8667329759760336
+      }
+    },
+    {
+      "time": "2026-07-16 16:58:05",
+      "step": "bio-v3 推理抽检",
+      "status": "succeeded",
+      "summary": "完成一次生物学问题推理，回答长度 181 字",
+      "artifacts": {
+        "infer_task_id": "06bbd0dcb4d8",
+        "prompt": "请从分子与细胞层面解释线粒体氧化磷酸化为什么需要内膜质子梯度。",
+        "answer_preview": "线粒体内膜是电子传递链的起始点，而线粒体基质是电子传递链的终点。在内膜质子梯度的作用下，电子通过线粒体内膜进入线粒体基质，同时释放出ATP。因此，线粒体氧化磷酸化需要内膜质子梯度来维持电化学势平衡。但一个关键问题在于：如果质子梯度不足，电子传递会受到限制，导致能量供应不足。所以，线粒体氧化磷酸化确实需要内膜质子梯度作为"
+      }
+    },
+    {
+      "time": "2026-07-16 17:01:16",
+      "step": "bio-v3 固定评测",
+      "status": "succeeded",
+      "summary": "评测完成，ROUGE-L=0.2429，gap=2",
+      "artifacts": {
+        "eval_task_id": "058f918d9218",
+        "report_id": "eval-bio-v3-生物专家-20260716-165453-20260716-170111",
+        "metrics": {
+          "rouge_l_f": 0.2429,
+          "bleu_1": 0.3779,
+          "bleu_2": 0.1724,
+          "judge_avg": 2.727
+        }
+      }
+    },
+    {
+      "time": "2026-07-16 17:03:56",
+      "step": "bio-v3 广度分析",
+      "status": "succeeded",
+      "summary": "按类别验证 11 条，薄弱类别 9 个",
+      "artifacts": {
+        "breadth_report_id": "breadth-bio-v3-_-20260716-165453-20260716-170356",
+        "issues": [
+          "生态学",
+          "植物学",
+          "分子遗传学",
+          "微生物学",
+          "生物化学",
+          "进化生物学",
+          "生理学",
+          "生物安全与伦理",
+          "细胞生物学"
+        ]
+      }
+    }
+  ],
+  "kb_collection": "biology",
+  "source": "data/biology/生物知识.jsonl",
+  "breadth_source": "data/biology/生物知识_广度验证.jsonl",
+  "eval_dataset_id": "bio-v广度验证-20260716-163517",
+  "iteration": 3,
+  "parent_dataset": "bio-v3-生物学知识-20260716-165449",
+  "final_dataset_id": "bio-v3-生物学知识-20260716-165449",
+  "last_model_id": "bio-v3-生物专家-20260716-165453",
+  "final_model_id": "bio-v3-生物专家-20260716-165453",
+  "step_summary_json": "data/agent_steps/biology-20260716-163517.json",
+  "step_summary_md": "data/agent_steps/biology-20260716-163517.md",
+  "finished_at": 1784192636.6617754
+}

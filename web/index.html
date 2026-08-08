@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<title>jiuan-lite 训推平台</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, "Microsoft YaHei", sans-serif; margin: 0; background:#0f172a; color:#e2e8f0; }
+  header { padding:18px 24px; border-bottom:1px solid #1e293b; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  h1 { font-size:18px; margin:0; }
+  .badge { padding:4px 10px; border-radius:6px; font-size:12px; font-weight:700; }
+  .badge.mock { background:#78350f; color:#fbbf24; }
+  .badge.real { background:#064e3b; color:#4ade80; }
+  #modehint { color:#94a3b8; font-size:12px; margin:0 0 0 auto; max-width:520px; }
+  nav { display:flex; gap:6px; padding:14px 24px 0; flex-wrap:wrap; }
+  nav button { background:#1e293b; color:#cbd5e1; border:0; padding:10px 20px; border-radius:8px 8px 0 0; cursor:pointer; font-size:14px; }
+  nav button.active { background:#2563eb; color:#fff; font-weight:600; }
+  main { padding:22px 24px; }
+  .page { display:none; }
+  .page.active { display:block; }
+  .card { background:#111c34; border:1px solid #1e293b; border-radius:10px; padding:18px; margin-bottom:18px; }
+  .card h2 { font-size:15px; margin:0 0 4px; }
+  .desc { color:#94a3b8; font-size:12px; margin:0 0 14px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+  .fld { display:flex; flex-direction:column; gap:4px; }
+  .fld label { font-size:12px; color:#94a3b8; }
+  input, select, textarea { padding:7px 9px; border-radius:6px; border:1px solid #334155; background:#0b1220; color:#e2e8f0; font-size:13px; }
+  textarea { width:100%; min-height:64px; resize:vertical; }
+  button.go { background:#2563eb; color:#fff; border:0; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:13px; }
+  button.ghost { background:#1e293b; color:#cbd5e1; }
+  table { width:100%; border-collapse:collapse; margin-top:10px; font-size:12px; }
+  th,td { border-bottom:1px solid #1e293b; padding:6px 8px; text-align:left; vertical-align:top; }
+  td { max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  td.result { max-width:520px; white-space:normal; word-break:break-all; color:#94a3b8; }
+  .s-succeeded{color:#4ade80} .s-failed{color:#f87171} .s-running{color:#fbbf24} .s-pending{color:#94a3b8}
+  .out { background:#0b1220; border:1px solid #1e293b; border-radius:6px; padding:10px; font-size:12px; white-space:pre-wrap; margin-top:10px; min-height:24px; color:#cbd5e1; }
+  tr.clk { cursor:pointer; }
+  tr.clk:hover td { background:#16233f; }
+  .more { margin-top:8px; }
+  .more button { background:#1e293b; color:#93c5fd; border:1px solid #334155; padding:5px 14px; border-radius:6px; cursor:pointer; font-size:12px; }
+  .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:50; }
+  .modal-bg.open { display:flex; align-items:flex-start; justify-content:center; }
+  .modal { background:#111c34; border:1px solid #334155; border-radius:10px; max-width:860px; width:92%; margin-top:40px; max-height:86vh; overflow:auto; padding:20px; }
+  .modal h3 { margin:0 0 6px; font-size:15px; }
+  .modal pre { background:#0b1220; border:1px solid #1e293b; border-radius:6px; padding:10px; font-size:12px; white-space:pre-wrap; word-break:break-all; color:#cbd5e1; overflow:auto; }
+  .modal .x { float:right; cursor:pointer; color:#94a3b8; font-size:20px; line-height:1; }
+  .kv { color:#94a3b8; font-size:12px; margin:2px 0; }
+  .kv b { color:#e2e8f0; }
+  .hint { color:#94a3b8; font-size:12px; line-height:1.55; }
+  .pill { display:inline-block; border:1px solid #334155; border-radius:999px; padding:2px 8px; color:#93c5fd; font-size:11px; margin:2px 4px 2px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>jiuan-lite 训推平台</h1>
+  <span id="mode" class="badge">…</span>
+  <p id="modehint"></p>
+</header>
+
+<nav>
+  <button data-tab="dataprep" class="active" onclick="switchTab('dataprep')">① 标 · 数据</button>
+  <button data-tab="train" onclick="switchTab('train')">② 训 · 训练</button>
+  <button data-tab="infer" onclick="switchTab('infer')">③ 推 · 推理</button>
+  <button data-tab="eval" onclick="switchTab('eval')">④ 评 · 评测</button>
+  <button data-tab="iter" onclick="switchTab('iter')">⑤ 迭代 · 数据驱动</button>
+  <button data-tab="rag" onclick="switchTab('rag')">⑥ 知识库 · RAG</button>
+  <button data-tab="anno" onclick="switchTab('anno')">⑦ 标注 · 回灌</button>
+  <button data-tab="agent" onclick="switchTab('agent')">⑧ Agent · 自动迭代</button>
+  <button data-tab="custom" onclick="switchTab('custom')">⑨ 通用训练 Agent</button>
+  <button data-tab="chat" onclick="switchTab('chat')">⑩ 对话 · LangChain Agent</button>
+</nav>
+
+<main>
+  <!-- ① 标 -->
+  <section id="page-dataprep" class="page active">
+    <div class="card">
+      <h2>① 标 · 数据准备</h2>
+      <p class="desc">清洗 / 去重 / 统一为 chat 格式，并切分 train/valid。source 是本轮新增数据来源，可选项目内 jsonl 文件或已有数据集；parent 是历史父数据集，用于增量迭代。</p>
+      <div class="row">
+        <div class="fld"><label>新增 source 类型</label>
+          <select id="dp-source-mode" onchange="dpToggleSourceMode()"><option value="file">jsonl 文件</option><option value="dataset">已有数据集(train+valid)</option></select></div>
+        <div class="fld" id="dp-source-file-wrap"><label>source 文件</label>
+          <select id="dp-source-select" style="min-width:260px" onchange="dpPickSource()"><option value="data/samples.jsonl">data/samples.jsonl</option></select></div>
+        <div class="fld" id="dp-source-path-wrap"><label>source 路径(jsonl，可手填)</label><input id="dp-source" list="dp-source-list" size="30" value="data/samples.jsonl"><datalist id="dp-source-list"></datalist></div>
+        <div class="fld" id="dp-source-dataset-wrap" style="display:none"><label>source 数据集</label>
+          <select id="dp-source-dataset" style="min-width:260px"><option value="">（先做数据准备）</option></select></div>
+        <div class="fld"><label>数据集名</label><input id="dp-name" size="16" value="emergency-sft"></div>
+        <div class="fld"><label>valid 比例</label><input id="dp-valid" type="number" step="0.05" min="0" max="0.9" value="0.2" style="width:80px"></div>
+        <div class="fld"><label>seed</label><input id="dp-seed" type="number" value="42" style="width:80px"></div>
+        <div class="fld"><label>父数据集(增量迭代)</label>
+          <select id="dp-parent" style="min-width:220px"><option value="">无(新建 v1)</option></select></div>
+        <button class="go" onclick="submitDataprep()">提交清洗</button>
+        <button class="go ghost" onclick="refreshDataSources();refreshDatasets()">刷新 source</button>
+      </div>
+      <div id="dp-out" class="out"></div>
+    </div>
+    <div class="card"><h2>标 · 任务</h2><div id="tbl-dataprep"></div></div>
+  </section>
+
+  <!-- ② 训 -->
+  <section id="page-train" class="page">
+    <div class="card">
+      <h2>② 训 · SFT / LoRA 训练</h2>
+      <p class="desc">选择数据集与后端；device 可选 CPU / GPU（本机无 GPU 时 cuda 会自动回退 CPU 并告警）。</p>
+      <div class="row">
+        <div class="fld"><label>dataset_id</label>
+          <select id="tr-dataset" style="min-width:220px"></select></div>
+        <div class="fld"><label>后端 backend</label>
+          <select id="tr-backend"><option value="auto">auto</option><option value="hf">hf (transformers)</option><option value="llamafactory">llamafactory</option><option value="mock">mock</option></select></div>
+        <div class="fld"><label>方法 method</label>
+          <select id="tr-method"><option value="">config 默认</option><option value="lora">lora</option><option value="full">full</option></select></div>
+        <div class="fld"><label>设备 device</label>
+          <select id="tr-device"><option value="auto">auto</option><option value="cpu">cpu</option><option value="cuda">cuda (GPU)</option></select></div>
+        <div class="fld"><label>epochs</label><input id="tr-epochs" type="number" placeholder="默认" style="width:80px"></div>
+        <div class="fld"><label>模型名</label><input id="tr-name" size="14" value="qwen0.5b-sft"></div>
+        <div class="fld"><label>学习率 lr</label><input id="tr-lr" type="number" step="0.00001" placeholder="默认" style="width:100px"></div>
+        <div class="fld"><label>batch_size</label><input id="tr-bs" type="number" min="1" placeholder="默认" style="width:90px"></div>
+        <div class="fld"><label>grad_accum</label><input id="tr-ga" type="number" min="1" placeholder="默认" style="width:90px"></div>
+        <div class="fld"><label>max_seq_len</label><input id="tr-msl" type="number" min="16" placeholder="默认" style="width:100px"></div>
+        <div class="fld"><label>精度 precision</label>
+          <select id="tr-prec"><option value="">config 默认</option><option value="auto">auto</option><option value="fp32">fp32</option><option value="fp16">fp16</option><option value="bf16">bf16</option></select></div>
+        <div class="fld"><label>lora_r</label><input id="tr-lr-r" type="number" min="1" placeholder="默认" style="width:80px"></div>
+        <div class="fld"><label>lora_alpha</label><input id="tr-lr-a" type="number" min="1" placeholder="默认" style="width:90px"></div>
+        <div class="fld"><label>lora_dropout</label><input id="tr-lr-d" type="number" step="0.01" min="0" max="0.9" placeholder="默认" style="width:100px"></div>
+        <button class="go" onclick="submitTrain()">开始训练</button>
+        <button class="go ghost" onclick="refreshDatasets()">刷新数据集</button>
+      </div>
+      <div id="tr-out" class="out"></div>
+    </div>
+    <div class="card"><h2>训 · 任务</h2><div id="tbl-train"></div></div>
+  </section>
+
+  <!-- ③ 推 -->
+  <section id="page-infer" class="page">
+    <div class="card">
+      <h2>③ 推 · 推理</h2>
+      <p class="desc">选择模型（base 或已训练模型），输入 prompt 生成回答，并记录 token 计量。</p>
+      <div class="row">
+        <div class="fld"><label>模型 model_id</label>
+          <select id="if-model" style="min-width:260px"></select></div>
+        <div class="fld"><label>后端 backend</label>
+          <select id="if-backend"><option value="auto">auto</option><option value="transformers">transformers</option><option value="vllm">vllm</option><option value="mock">mock</option></select></div>
+        <button class="go ghost" onclick="refreshModels()">刷新模型</button>
+      </div>
+      <div class="fld" style="margin-top:10px"><label>prompt</label>
+        <textarea id="if-prompt">地震发生时应如何避险？</textarea></div>
+      <div class="row" style="margin-top:10px">
+        <div class="fld"><label>max_new_tokens</label><input id="if-mnt" type="number" min="1" placeholder="默认" style="width:110px"></div>
+        <div class="fld"><label>do_sample</label>
+          <select id="if-ds"><option value="">config 默认</option><option value="false">贪婪(false)</option><option value="true">采样(true)</option></select></div>
+        <div class="fld"><label>temperature</label><input id="if-temp" type="number" step="0.05" min="0" max="2" placeholder="默认" style="width:100px"></div>
+        <div class="fld"><label>top_p</label><input id="if-topp" type="number" step="0.05" min="0" max="1" placeholder="默认" style="width:90px"></div>
+      </div>
+      <div class="row" style="margin-top:10px"><button class="go" onclick="submitInfer()">生成</button></div>
+      <div id="if-out" class="out"></div>
+    </div>
+    <div class="card"><h2>推 · 任务</h2><div id="tbl-infer"></div></div>
+  </section>
+
+  <!-- ④ 评 -->
+  <section id="page-eval" class="page">
+    <div class="card">
+      <h2>④ 评 · 评测</h2>
+      <p class="desc">在 valid 切分上评测 ROUGE-L / BLEU（mock 或 train 切分的指标标注为不可靠）。</p>
+      <div class="row">
+        <div class="fld"><label>模型 model_id</label>
+          <select id="ev-model" style="min-width:260px"></select></div>
+        <div class="fld"><label>dataset_id</label>
+          <select id="ev-dataset" style="min-width:220px"></select></div>
+        <div class="fld"><label>split</label>
+          <select id="ev-split"><option value="valid">valid</option><option value="train">train</option></select></div>
+        <div class="fld"><label>LLM-as-Judge</label>
+          <select id="ev-judge"><option value="auto">auto</option><option value="true">开启</option><option value="false">关闭</option></select></div>
+        <div class="fld"><label>对比基线</label>
+          <select id="ev-baseline"><option value="">不对比</option><option value="base">base（原始模型）</option></select></div>
+        <div class="fld"><label>max_samples</label><input id="ev-max" type="number" min="1" placeholder="默认" style="width:100px"></div>
+        <button class="go" onclick="submitEval()">开始评测</button>
+        <button class="go ghost" onclick="refreshDatasets();refreshModels()">刷新</button>
+      </div>
+      <div id="ev-out" class="out"></div>
+    </div>
+    <div class="card">
+      <h2>验证集广度 · Judge 分析</h2>
+      <p class="desc">展示 Agent/数据源自动扩展出的广度验证集，以及 judge 对各类别覆盖面的评分结果。judge 负责发现广度问题，不把训练样本写回 held-out 验证集。</p>
+      <div class="row"><button class="go ghost" onclick="loadBreadthReports()">刷新广度报告</button></div>
+      <div id="ev-breadth" class="out">点击刷新查看验证集广度。</div>
+    </div>
+    <div class="card"><h2>评 · 任务</h2><div id="tbl-eval"></div></div>
+  </section>
+
+  <!-- ⑤ 迭代 -->
+  <section id="page-iter" class="page">
+    <div class="card">
+      <h2>⑤ 迭代 · 数据驱动迭代闭环</h2>
+      <p class="desc">对标久安「数据驱动迭代」：按数据集血缘(parent)分组，展示每一轮 v1→v2→… 的数据量/loss/指标变化。在④评测后会自动给出薄弱点(gap)建议，指导下一轮该补什么数据。</p>
+      <div class="row"><button class="go" onclick="loadIterations()">刷新迭代看板</button></div>
+      <div id="iter-out" class="out">点击刷新查看迭代链。</div>
+    </div>
+    <div class="card"><h2>④ 历史评测薄弱点(全部保留，从新到旧，标注迭代)</h2><div id="iter-gaps" class="out">点击上方“刷新迭代看板”加载全部历史建议。</div></div>
+  </section>
+
+  <!-- ⑥ RAG -->
+  <section id="page-rag" class="page">
+    <div class="card">
+      <h2>⑥ 知识库 · RAG 检索增强</h2>
+      <p class="desc">弥补 SFT “硬记”不足：上传应急法规/预案文档入库，提问时先检索相关条文再注入上下文生成。当前离线默认 TF-IDF 嵌入（零下载），装 sentence-transformers+bge 可升级语义检索。</p>
+      <div class="row">
+        <div class="fld"><label>知识库 collection</label><input id="rag-coll" list="rag-coll-list" size="14" value="default"><datalist id="rag-coll-list"></datalist></div>
+        <div class="fld"><label>文档 source (项目内)</label><input id="rag-src" size="26" value="data/_reg_demo.txt"></div>
+        <div class="fld"><label>chunk_size</label><input id="rag-cs" type="number" min="50" value="400" style="width:90px"></div>
+        <button class="go" onclick="ragIngest()">入库</button>
+        <button class="go ghost" onclick="ragStats()">知识库状态</button>
+        <button class="go ghost" onclick="ragCollections()">刷新集合</button>
+      </div>
+      <div id="rag-ing" class="out"></div>
+      <div id="rag-collections" class="out">点击「刷新集合」查看所有知识库。</div>
+    </div>
+    <div class="card">
+      <h2>RAG 提问</h2>
+      <div class="row">
+        <div class="fld"><label>模型 model_id</label><select id="rag-model" style="min-width:240px"></select></div>
+        <div class="fld"><label>top_k</label><input id="rag-topk" type="number" min="1" max="10" value="3" style="width:80px"></div>
+      </div>
+      <div class="fld" style="margin-top:10px"><label>prompt</label><textarea id="rag-prompt">AED自动体外除颤器怎么用？</textarea></div>
+      <div class="row" style="margin-top:10px"><button class="go" onclick="ragQuery()">检索并生成</button></div>
+      <div id="rag-out" class="out"></div>
+    </div>
+    <div class="card">
+      <h2>知识库缺口 <span id="rag-gap-badge"></span></h2>
+      <p class="desc">系统自动记录"检索未命中(最高分低于阈值)"的问题。业务人员点「补充知识」贴入权威条文，一键入库后下次提问即命中，无需手动找文件。</p>
+      <div class="row"><button class="go ghost" onclick="ragLoadGaps()">刷新缺口</button></div>
+      <div id="rag-gaps" class="out">点击「刷新缺口」查看。</div>
+    </div>
+  </section>
+
+  <!-- ⑦ 标注回灌 -->
+  <section id="page-anno" class="page">
+    <div class="card">
+      <h2>⑦ 标注 · 薄弱点回灌闭环</h2>
+      <p class="desc">gap 分析 → 生成标注任务 → 浏览器内直接标注 → 回灌为训练集(可选硬样本加权/parent增量) → 一键触发训练。全程无需编辑 jsonl。</p>
+      <div class="row">
+        <div class="fld"><label>任务名前缀</label><input id="an-name" size="12" value="gap"></div>
+        <div class="fld"><label>max_items</label><input id="an-max" type="number" min="1" placeholder="全部" style="width:90px"></div>
+        <button class="go" onclick="anCreate()">生成标注任务</button>
+        <button class="go ghost" onclick="anLoadTasks()">刷新任务</button>
+      </div>
+      <div id="an-out" class="out"></div>
+    </div>
+
+    <div class="card">
+      <h2>标注覆盖度 <span id="an-cov-badge"></span></h2>
+      <p class="desc">一眼看出哪些类别/迭代还没补完（覆盖率低的排前面）。</p>
+      <div class="row"><button class="go ghost" onclick="anLoadCoverage()">刷新覆盖度</button></div>
+      <div id="an-coverage" class="out">点击「刷新覆盖度」查看。</div>
+    </div>
+
+    <div class="card"><h2>标注任务列表</h2><div id="an-tasks"></div></div>
+
+    <div class="card">
+      <h2>浏览器内标注</h2>
+      <p class="desc">选任务→加载，直接在下方填写答案→保存。无需打开 jsonl 文件。</p>
+      <div class="row">
+        <div class="fld"><label>标注任务</label><select id="an-edit-task" style="min-width:220px"></select></div>
+        <button class="go" onclick="anLoadEditor()">加载标注</button>
+        <button class="go" onclick="anSaveEditor()">保存标注</button>
+      </div>
+      <div id="an-editor" class="out">先选任务并点「加载标注」。</div>
+    </div>
+
+    <div class="card">
+      <h2>回灌为训练集</h2>
+      <p class="desc">填好答案后选任务回灌。硬样本加权=知识缺失类样本在训练集内复制倍数；勾选自动训练则回灌后立即排训练。</p>
+      <div class="row">
+        <div class="fld"><label>标注任务</label><select id="an-task" style="min-width:220px"></select></div>
+        <div class="fld"><label>新数据集名</label><input id="an-dsname" size="12" value="annotated"></div>
+        <div class="fld"><label>父数据集(可选)</label><select id="an-parent" style="min-width:200px"><option value="">无</option></select></div>
+        <div class="fld"><label>硬样本加权</label><input id="an-hw" type="number" min="1" max="10" value="1" style="width:70px"></div>
+        <div class="fld"><label>自动训练</label><input id="an-auto" type="checkbox"></div>
+        <button class="go" onclick="anCommit()">回灌生成数据集</button>
+      </div>
+      <div id="an-commit" class="out"></div>
+    </div>
+
+    <div class="card">
+      <h2>跨版本 gap 解决追踪</h2>
+      <p class="desc">每次回灌解决了哪些薄弱点，及其在回灌前后评测里的 judge/ROUGE 变化。</p>
+      <div class="row"><button class="go ghost" onclick="anLoadResolved()">刷新追踪</button></div>
+      <div id="an-resolved" class="out">点击「刷新追踪」查看。</div>
+    </div>
+
+    <div class="card">
+      <h2>回灌效果验证 · 查缺补漏</h2>
+      <p class="desc">从回灌样本生成同主题但不同问法的 impact held-out 验证题，对比回灌前/后模型；未改善项自动生成补漏标注任务，可继续回灌训练。</p>
+      <div class="row">
+        <div class="fld"><label>回灌后 dataset_id</label><input id="impact-dataset" size="34" placeholder="留空=最新回灌数据集"></div>
+        <div class="fld"><label>验证题数</label><input id="impact-max" type="number" min="1" max="80" value="12" style="width:80px"></div>
+        <div class="fld"><label>Judge</label><select id="impact-judge"><option value="auto">auto</option><option value="true">开启</option><option value="false">关闭</option></select></div>
+        <div class="fld"><label>生成补漏任务</label><input id="impact-patch" type="checkbox" checked></div>
+        <button class="go" onclick="impactRun()">验证回灌效果</button>
+        <button class="go ghost" onclick="impactLoadReports()">刷新报告</button>
+      </div>
+      <div id="impact-out" class="out">点击「验证回灌效果」生成 impact 验证集并对比前后模型。</div>
+    </div>
+  </section>
+
+  <!-- ⑧ Agent -->
+  <section id="page-agent" class="page">
+    <div class="card">
+      <h2>⑧ Agent · 自动迭代机器人</h2>
+      <p class="desc">监控标注闭环状态，按“已完成标注 → 回灌 → 训练 → 评测 → 生成新标注任务”的顺序自动推进；没有待推进标注任务或无新 gap 时自动停止。</p>
+      <div class="row">
+        <div class="fld"><label>父数据集</label><select id="ag-parent" style="min-width:220px"></select></div>
+        <div class="fld"><label>评测集</label><select id="ag-eval" style="min-width:220px"></select></div>
+        <div class="fld"><label>模型名前缀</label><input id="ag-model" size="14" value="agent-sft"></div>
+        <div class="fld"><label>训练后端</label><select id="ag-backend"><option value="hf">hf</option><option value="auto">auto</option><option value="llamafactory">llamafactory</option><option value="mock">mock</option></select></div>
+        <div class="fld"><label>max_iterations</label><input id="ag-maxit" type="number" min="1" max="20" value="5" style="width:90px"></div>
+        <div class="fld"><label>硬样本加权</label><input id="ag-hw" type="number" min="1" max="10" value="1" style="width:80px"></div>
+        <button class="go" onclick="agentStart()">自动迭代</button>
+        <button class="go ghost" onclick="agentStatus()">刷新状态</button>
+      </div>
+      <div id="agent-out" class="out">未启动。</div>
+    </div>
+    <div class="card">
+      <h2>生物专家 · 三轮自动训练</h2>
+      <p class="desc">全新生物学场景：自动生成 110 条 source=生物知识 的预标注池，拆成三轮标注回灌，训练“迭代名+生物专家+时间”模型，评测并做 judge 广度分析。</p>
+      <div class="row">
+        <div class="fld"><label>迭代名前缀</label><input id="bio-prefix" size="10" value="bio-v"></div>
+        <div class="fld"><label>source 名字</label><input id="bio-source-name" size="10" value="生物知识"></div>
+        <div class="fld"><label>训练后端</label><select id="bio-backend"><option value="hf">hf</option><option value="auto">auto</option><option value="mock">mock</option><option value="llamafactory">llamafactory</option></select></div>
+        <div class="fld"><label>设备</label><select id="bio-device"><option value="cpu">cpu</option><option value="auto">auto</option><option value="cuda">cuda</option></select></div>
+        <div class="fld"><label>epochs</label><input id="bio-epochs" type="number" min="1" max="5" value="1" style="width:70px"></div>
+        <div class="fld"><label>eval 样本</label><input id="bio-eval-max" type="number" min="1" max="40" value="11" style="width:80px"></div>
+        <div class="fld"><label>广度样本</label><input id="bio-breadth-max" type="number" min="1" max="40" value="11" style="width:80px"></div>
+        <button class="go" onclick="biologyAgentStart()">启动生物三轮</button>
+        <button class="go ghost" onclick="biologyAgentStatus()">刷新生物状态</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>一键保通打包</h2>
+      <p class="desc">补全生物知识库，检查标注源、RAG、最终模型/数据集、评测与广度报告；缺少产物时可自动触发生物三轮 Agent，最后生成可复用的步骤报告。</p>
+      <div class="row">
+        <div class="fld"><label>知识库 collection</label><input id="one-coll" size="10" value="biology"></div>
+        <div class="fld"><label>缺失时自动训练</label><input id="one-run-missing" type="checkbox" checked></div>
+        <div class="fld"><label>强制重跑三轮</label><input id="one-force" type="checkbox"></div>
+        <div class="fld"><label>推理抽检</label><input id="one-infer" type="checkbox" checked></div>
+        <button class="go" onclick="oneclickAgentStart()">一键保通打包</button>
+        <button class="go ghost" onclick="oneclickAgentStatus()">刷新一键状态</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑨ 通用训练 Agent -->
+  <section id="page-custom" class="page">
+    <div class="card">
+      <h2>⑨ 通用训练 Agent · 从一句话到三轮训练</h2>
+      <p class="desc">面向任意强化方向：Agent 自动生成训练 source、held-out 验证集和知识库，分轮预标注回灌、训练、推理抽检、评测与广度分析。适合小白从 demo 跑通开始，再逐步替换为真实业务数据。</p>
+      <div class="fld">
+        <label>和 Agent 对话：描述你希望强化的大模型方向</label>
+        <textarea id="ca-brief">我想训练一个能做法律合同审查的大模型，重点识别风险条款、付款条件、违约责任和修改建议。</textarea>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="go" onclick="customAgentPlan()">让 Agent 生成方案</button>
+        <button class="go ghost" onclick="customAgentStatus()">刷新通用状态</button>
+      </div>
+      <div id="ca-plan" class="out">先描述方向，再让 Agent 生成推荐参数。</div>
+    </div>
+
+    <div class="card">
+      <h2>训练参数</h2>
+      <p class="desc">默认参数偏向本机快速跑通。样本数、基底模型、轮数、输出目录都可以改；正式训练请增加真实数据量和验证集广度。</p>
+      <div class="row">
+        <div class="fld"><label>强化方向</label><input id="ca-direction" size="36" value="法律合同审查：识别风险条款、付款条件、违约责任和修改建议"></div>
+        <div class="fld"><label>场景名</label><input id="ca-scenario" size="14" value="合同审查"></div>
+        <div class="fld"><label>source 名字</label><input id="ca-source" size="14" value="合同审查知识"></div>
+        <div class="fld"><label>迭代名前缀</label><input id="ca-prefix" size="12" value="custom-v"></div>
+        <div class="fld"><label>数据集名前缀</label><input id="ca-dataset-name" size="14" value="合同审查知识"></div>
+        <div class="fld"><label>模型名前缀</label><input id="ca-model-name" size="14" value="合同审查专家"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="fld"><label>基底模型路径/HF 名称</label><input id="ca-base" size="40" value="data/registry/base/qwen2.5-0.5b-instruct"></div>
+        <div class="fld"><label>输出目录</label><input id="ca-output" size="22" value="data/custom_agents"></div>
+        <div class="fld"><label>知识库 collection</label><input id="ca-coll" size="12" value="custom"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="fld"><label>训练样本数</label><input id="ca-samples" type="number" min="6" max="200" value="20" style="width:90px"></div>
+        <div class="fld"><label>验证样本数</label><input id="ca-eval-samples" type="number" min="3" max="80" value="8" style="width:90px"></div>
+        <div class="fld"><label>迭代轮数</label><input id="ca-iters" type="number" min="1" max="8" value="3" style="width:80px"></div>
+        <div class="fld"><label>数据生成</label><select id="ca-gen"><option value="auto">auto：Judge优先，失败模板</option><option value="judge">强制 Judge</option><option value="template">模板兜底</option></select></div>
+        <div class="fld"><label>Judge</label><select id="ca-judge"><option value="auto">auto</option><option value="true">开启</option><option value="false">关闭</option></select></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="fld"><label>训练后端</label><select id="ca-backend"><option value="hf">hf</option><option value="auto">auto</option><option value="mock">mock</option><option value="llamafactory">llamafactory</option></select></div>
+        <div class="fld"><label>设备</label><select id="ca-device"><option value="cpu">cpu</option><option value="auto">auto</option><option value="cuda">cuda</option></select></div>
+        <div class="fld"><label>epochs</label><input id="ca-epochs" type="number" min="1" max="5" value="1" style="width:70px"></div>
+        <div class="fld"><label>max_seq_len</label><input id="ca-msl" type="number" min="128" max="2048" value="512" style="width:90px"></div>
+        <div class="fld"><label>评测 max</label><input id="ca-eval-max" type="number" min="1" max="80" value="8" style="width:80px"></div>
+        <div class="fld"><label>广度 max</label><input id="ca-breadth-max" type="number" min="1" max="80" value="8" style="width:80px"></div>
+        <div class="fld"><label>推理抽检</label><input id="ca-infer" type="checkbox" checked></div>
+        <div class="fld"><label>首轮人工审核</label><input id="ca-manual-initial" type="checkbox"></div>
+        <div class="fld"><label>后续回灌人工审核</label><input id="ca-manual-iter" type="checkbox"></div>
+      </div>
+      <div class="fld" style="margin-top:10px">
+        <label>推理抽检问题（可空）</label>
+        <textarea id="ca-probe" placeholder="留空时 Agent 自动使用 held-out 验证题。"></textarea>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="go" onclick="customAgentStart()">启动通用训练</button>
+        <button class="go ghost" onclick="customAgentStatus()">刷新状态</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>当前进度</h2>
+      <p class="desc">实时显示当前阶段、每轮数据集/模型/指标、折叠步骤日志和最终报告路径。</p>
+      <div id="ca-out" class="out">未启动。</div>
+    </div>
+  </section>
+
+  <!-- ⑩ 对话 -->
+  <section id="page-chat" class="page">
+    <div class="card">
+      <h2>LangChain Agent 对话</h2>
+      <p class="desc">基于 LangChain create_tool_calling_agent 构建，对接 DeepSeek 大模型，支持 RAG 检索/模型查询/血缘追踪 三个工具调用、滑动窗口记忆与 SSE 流式输出。</p>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+        <button onclick="createSession()" class="btn">创建会话</button>
+        <select id="chat-session" style="min-width:200px;"><option value="">-- 选择会话 --</option></select>
+        <button onclick="loadSessions()" class="btn" style="background:#6c757d;">刷新</button>
+        <span id="chat-status" style="font-size:12px;color:#888;"></span>
+      </div>
+    </div>
+    <div class="card">
+      <div id="chat-messages" style="height:320px;overflow-y:auto;border:1px solid #ddd;border-radius:6px;padding:12px;background:#fafafa;margin-bottom:10px;">
+        <p style="color:#999;text-align:center;">请先创建会话，然后输入问题开始对话。</p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input id="chat-input" size="50" placeholder="输入问题，如：帮我搜索应急预案的知识 / 平台有多少已训练模型？" onkeydown="if(event.key==='Enter')sendChat()">
+        <button onclick="sendChat()" class="btn">发送</button>
+        <button onclick="sendChatStream()" class="btn" style="background:#28a745;">流式发送</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="task-modal" class="modal-bg" onclick="if(event.target===this)closeTaskModal()">
+  <div class="modal">
+    <span class="x" onclick="closeTaskModal()">&times;</span>
+    <h3>任务详情 · 数据库记录</h3>
+    <div id="task-modal-body">加载中…</div>
+  </div>
+</div>
+
+<script>
+let current = "dataprep";
+let agentTimer = null;
+let customTimer = null;
+let customResumeModel = "";
+let customResumeProfile = null;
+function switchTab(tab){
+  current = tab;
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.getElementById("page-"+tab).classList.add("active");
+  if(tab==="iter"){ loadIterations(); }
+  else if(tab==="rag"){ ragCollections(); ragStats(); ragLoadGaps(); }
+  else if(tab==="anno"){ anLoadTasks(); anLoadResolved(); impactLoadReports(); }
+  else if(tab==="agent"){ refreshDatasets(); agentStatus(); }
+  else if(tab==="custom"){ customAgentStatus(); }
+  else if(tab==="eval"){ loadTasks(tab); loadBreadthReports(); }
+  else { loadTasks(tab); }
+}
+function initialTabFromUrl(){
+  try{
+    const v=(new URLSearchParams(location.search).get("v")||"").toLowerCase();
+    const map={
+      custom9:"custom", custom:"custom",
+      agent8:"agent", agent:"agent", bio:"agent", oneclick:"agent",
+      impact2:"anno", impact:"anno", anno:"anno",
+      iter:"iter", rag:"rag", eval:"eval", train:"train", infer:"infer", dataprep:"dataprep"
+    };
+    return map[v]||"dataprep";
+  }catch(e){ return "dataprep"; }
+}
+async function post(url, body){
+  const r = await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  return r.json();
+}
+async function refreshMode(){
+  try{
+    const h = await (await fetch("/health")).json();
+    const el = document.getElementById("mode");
+    if(h.mock_mode){ el.textContent="MOCK"; el.className="badge mock";
+      document.getElementById("modehint").textContent="当前 MOCK 离线兜底：指标/回答仅演示链路，不代表真实模型效果。"; }
+    else { el.textContent="REAL"; el.className="badge real";
+      document.getElementById("modehint").textContent="当前 REAL：使用 Qwen2.5-0.5B 真实推理/训练。"; }
+  }catch(e){}
+}
+function dpToggleSourceMode(){
+  const mode = document.getElementById("dp-source-mode").value;
+  document.getElementById("dp-source-file-wrap").style.display = mode==="dataset" ? "none" : "";
+  document.getElementById("dp-source-path-wrap").style.display = mode==="dataset" ? "none" : "";
+  document.getElementById("dp-source-dataset-wrap").style.display = mode==="dataset" ? "" : "none";
+}
+function dpPickSource(){
+  const v = document.getElementById("dp-source-select").value;
+  if(v) document.getElementById("dp-source").value = v;
+}
+async function refreshDataSources(){
+  const sel = document.getElementById("dp-source-select");
+  const dl = document.getElementById("dp-source-list");
+  if(!sel || !dl) return;
+  const cur = document.getElementById("dp-source").value || sel.value;
+  try{
+    const rows = await (await fetch("/dataprep/sources")).json();
+    const opts = (rows||[]).map(r=>{
+      const label = `${r.source} (${r.samples||0}条, ${r.kind||"jsonl"})`;
+      return `<option value="${esc(r.source)}">${esc(label)}</option>`;
+    }).join("");
+    sel.innerHTML = opts || `<option value="data/samples.jsonl">data/samples.jsonl</option>`;
+    dl.innerHTML = (rows||[]).map(r=>`<option value="${esc(r.source)}">${esc(r.samples||0)}条 ${esc(r.kind||"jsonl")}</option>`).join("");
+    if((rows||[]).some(r=>r.source===cur)){
+      sel.value = cur;
+      document.getElementById("dp-source").value = cur;
+    }else if(rows && rows.length && !cur){
+      sel.value = rows[0].source;
+      document.getElementById("dp-source").value = rows[0].source;
+    }
+  }catch(e){
+    sel.innerHTML = `<option value="data/samples.jsonl">data/samples.jsonl</option>`;
+  }
+}
+async function refreshDatasets(){
+  const dsets = await (await fetch("/datasets")).json();
+  const ids = (dsets||[]).map(d=>d.dataset_id);
+  const trainIds = (dsets||[]).filter(d=>d.role!=="eval").map(d=>d.dataset_id);
+  const evalIds = (dsets||[]).filter(d=>d.role==="eval").map(d=>d.dataset_id);
+  for(const sel of [document.getElementById("tr-dataset")]){
+    const cur = sel.value;
+    sel.innerHTML = trainIds.map(i=>`<option value="${i}">${i}</option>`).join("") || `<option value="">（先做数据准备）</option>`;
+    if(trainIds.includes(cur)) sel.value = cur;
+  }
+  for(const sel of [document.getElementById("ev-dataset"), document.getElementById("ag-eval")]){
+    if(!sel) continue;
+    const cur = sel.value;
+    sel.innerHTML = ids.map(i=>`<option value="${i}">${i}</option>`).join("") || `<option value="">（先做数据准备）</option>`;
+    if(ids.includes(cur)) sel.value = cur;
+    else if(evalIds.length) sel.value = evalIds[evalIds.length-1];
+  }
+  for(const psel of [document.getElementById("dp-parent"), document.getElementById("ag-parent")]){
+    if(!psel) continue;
+    const curp = psel.value;
+    const label = psel.id==="dp-parent" ? "无(新建 v1)" : "自动选择最新";
+    psel.innerHTML = `<option value="">${label}</option>` + trainIds.map(i=>`<option value="${i}">${i}</option>`).join("");
+    if(trainIds.includes(curp)) psel.value = curp;
+    else if(psel.id==="ag-parent" && trainIds.length) psel.value = trainIds[trainIds.length-1];
+  }
+  const srcDs = document.getElementById("dp-source-dataset");
+  if(srcDs){
+    const cur = srcDs.value;
+    srcDs.innerHTML = trainIds.map(i=>`<option value="${i}">${i}</option>`).join("") || `<option value="">（先做数据准备）</option>`;
+    if(trainIds.includes(cur)) srcDs.value = cur;
+  }
+}
+async function refreshModels(){
+  const models = await (await fetch("/models")).json();
+  const ids = [...new Set((models||[]).filter(m=>m.type!=="eval"&&m.model_id).map(m=>m.model_id))];
+  const opts = `<option value="base">base（原始 Qwen2.5-0.5B）</option>` +
+    ids.map(i=>`<option value="${i}">${i}</option>`).join("");
+  for(const sel of [document.getElementById("if-model"), document.getElementById("ev-model"), document.getElementById("rag-model")]){
+    if(!sel) continue;
+    const cur = sel.value; sel.innerHTML = opts; if(cur) sel.value = cur;
+  }
+  const bsel = document.getElementById("ev-baseline");
+  if(bsel){
+    const curb = bsel.value;
+    bsel.innerHTML = `<option value="">不对比</option><option value="base">base（原始模型）</option>` +
+      ids.map(i=>`<option value="${i}">${i}</option>`).join("");
+    bsel.value = curb;
+  }
+}
+function fmtTime(ts){
+  if(!ts) return "-";
+  const d = new Date(ts*1000);
+  const p = n => String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+function finishedAt(t){
+  // 已完成(成功/失败)任务的 updated_at 即完成时间；未完成显示占位
+  return (t.status==="succeeded"||t.status==="failed") ? fmtTime(t.updated_at) : "—";
+}
+const _taskExpand = {};   // stage -> 是否展开全部
+const _panelExpand = {};  // panel id -> 是否展开全部
+const COLLAPSE_N = 10;
+function esc(str){ return (str==null?"":String(str)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function jsStr(str){ return String(str==null?"":str).replace(/\\/g,"\\\\").replace(/'/g,"\\'"); }
+function limitRows(panel, rows, n=COLLAPSE_N){ return _panelExpand[panel] ? rows : rows.slice(0,n); }
+function moreButton(panel, rows, rerender, n=COLLAPSE_N){
+  if(!rows || rows.length<=n) return "";
+  return `<div class="more"><button onclick="_panelExpand['${panel}']=!_panelExpand['${panel}'];${rerender}">`+
+    (_panelExpand[panel] ? `收起（仅显示最新 ${n} 条）` : `展开全部（共 ${rows.length} 条）`)+`</button></div>`;
+}
+function renderTaskRows(rows, stage){
+  const expanded = !!_taskExpand[stage];
+  const shown = expanded ? rows : rows.slice(0, COLLAPSE_N);
+  let html = `<table><thead><tr><th>id</th><th>status</th><th>进度</th><th>完成时间</th><th>result</th></tr></thead><tbody>` +
+    shown.map(t=>`<tr class="clk" onclick="showTaskDetail('${t.id}')" title="点击查看数据库完整记录"><td>${t.id.slice(0,8)}</td><td class="s-${t.status}">${t.status}</td>`+
+      `<td>${(t.status==="running"&&t.progress)?t.progress:"—"}</td>`+
+      `<td>${finishedAt(t)}</td>`+
+      `<td class="result">${t.error?("⚠ "+esc(t.error)):esc(JSON.stringify(t.result).slice(0,300))}</td></tr>`).join("") +
+    `</tbody></table>`;
+  if(rows.length > COLLAPSE_N){
+    html += `<div class="more"><button onclick="toggleTasks('${stage}')">`+
+      (expanded ? `收起（仅显示前 ${COLLAPSE_N} 条）` : `展开全部（共 ${rows.length} 条）`)+`</button></div>`;
+  }
+  return rows.length ? html : "暂无任务";
+}
+async function loadTasks(stage){
+  const rows = await (await fetch("/tasks?stage="+stage)).json();
+  // 后端已按 updated_at 降序(完成时间由晚到早)返回
+  const el = document.getElementById("tbl-"+stage);
+  if(el){ el._rows = rows; el.innerHTML = renderTaskRows(rows, stage); }
+}
+function toggleTasks(stage){
+  _taskExpand[stage] = !_taskExpand[stage];
+  const el = document.getElementById("tbl-"+stage);
+  if(el && el._rows){ el.innerHTML = renderTaskRows(el._rows, stage); }
+}
+async function showTaskDetail(taskId){
+  const bg=document.getElementById("task-modal");
+  const body=document.getElementById("task-modal-body");
+  body.innerHTML="加载中…"; bg.classList.add("open");
+  try{
+    const t=await (await fetch("/tasks/"+encodeURIComponent(taskId))).json();
+    if(t.detail){ body.innerHTML="加载失败："+esc(JSON.stringify(t.detail)); return; }
+    const logs=(t.logs||[]).map(l=>esc(l)).join("\n")||"（无日志）";
+    body.innerHTML=
+      `<div class="kv">id：<b>${esc(t.id)}</b></div>`+
+      `<div class="kv">阶段：<b>${esc(t.stage)}</b>　状态：<b class="s-${t.status}">${esc(t.status)}</b>`+
+        `${t.progress?("　进度："+esc(t.progress)):""}</div>`+
+      `<div class="kv">创建：<b>${fmtTime(t.created_at)}</b>　更新：<b>${fmtTime(t.updated_at)}</b></div>`+
+      (t.error?`<div class="kv">错误：<b style="color:#f87171">${esc(t.error)}</b></div>`:"")+
+      `<h3 style="margin-top:14px">参数 params</h3><pre>${esc(JSON.stringify(t.params,null,2))}</pre>`+
+      `<h3>结果 result</h3><pre>${esc(JSON.stringify(t.result,null,2))}</pre>`+
+      `<h3>日志 logs（${(t.logs||[]).length} 条）</h3><pre>${logs}</pre>`;
+  }catch(e){ body.innerHTML="加载失败："+esc(e); }
+}
+function closeTaskModal(){ document.getElementById("task-modal").classList.remove("open"); }
+function num(v){ return v==="" || v===null ? null : Number(v); }
+function bool3(v){ return v==="" || v===null ? null : (v==="true"); }
+
+async function submitDataprep(){
+  document.getElementById("dp-out").textContent = "提交中…";
+  const sourceMode = document.getElementById("dp-source-mode").value;
+  const parent = document.getElementById("dp-parent").value || null;
+  const body = {
+    name:document.getElementById("dp-name").value,
+    valid_ratio:Number(document.getElementById("dp-valid").value),
+    seed:Number(document.getElementById("dp-seed").value),
+    parent};
+  if(sourceMode==="dataset"){
+    const sourceDataset = document.getElementById("dp-source-dataset").value;
+    if(!sourceDataset){
+      document.getElementById("dp-out").textContent = "请先选择 source 数据集，或切回 jsonl 文件模式。";
+      return;
+    }
+    if(parent && parent===sourceDataset){
+      document.getElementById("dp-out").textContent = "source 数据集和父数据集不能相同，否则去重后不会新增内容。请换一个 source，或清空父数据集。";
+      return;
+    }
+    body.source_dataset = sourceDataset;
+    body.source = "";
+  }else{
+    body.source = document.getElementById("dp-source").value;
+    body.source_dataset = null;
+  }
+  const res = await post("/dataprep", body);
+  document.getElementById("dp-out").textContent = "已提交任务 "+res.task_id;
+  setTimeout(()=>{loadTasks("dataprep");refreshDatasets();},600);
+}
+async function submitTrain(){
+  const ds = document.getElementById("tr-dataset").value;
+  if(!ds){ document.getElementById("tr-out").textContent="请先在①标准备数据集"; return; }
+  document.getElementById("tr-out").textContent = "提交中…";
+  const res = await post("/train",{
+    dataset_id:ds,
+    backend:document.getElementById("tr-backend").value,
+    method:document.getElementById("tr-method").value||null,
+    device:document.getElementById("tr-device").value,
+    epochs:num(document.getElementById("tr-epochs").value),
+    precision:document.getElementById("tr-prec").value||null,
+    lr:num(document.getElementById("tr-lr").value),
+    batch_size:num(document.getElementById("tr-bs").value),
+    grad_accum:num(document.getElementById("tr-ga").value),
+    max_seq_len:num(document.getElementById("tr-msl").value),
+    lora_r:num(document.getElementById("tr-lr-r").value),
+    lora_alpha:num(document.getElementById("tr-lr-a").value),
+    lora_dropout:num(document.getElementById("tr-lr-d").value),
+    name:document.getElementById("tr-name").value});
+  document.getElementById("tr-out").textContent = "已提交训练任务 "+res.task_id+"（可在下方任务列表看状态）";
+  setTimeout(()=>{loadTasks("train");refreshModels();},600);
+}
+async function submitInfer(){
+  document.getElementById("if-out").textContent = "生成中…";
+  const res = await post("/infer",{
+    model_id:document.getElementById("if-model").value||"base",
+    backend:document.getElementById("if-backend").value,
+    max_new_tokens:num(document.getElementById("if-mnt").value),
+    do_sample:bool3(document.getElementById("if-ds").value),
+    temperature:num(document.getElementById("if-temp").value),
+    top_p:num(document.getElementById("if-topp").value),
+    prompt:document.getElementById("if-prompt").value});
+  document.getElementById("if-out").textContent = "已提交任务 "+res.task_id;
+  setTimeout(()=>loadTasks("infer"),600);
+}
+async function submitEval(){
+  const ds = document.getElementById("ev-dataset").value;
+  if(!ds){ document.getElementById("ev-out").textContent="请先在①标准备数据集"; return; }
+  document.getElementById("ev-out").textContent = "评测中…";
+  const res = await post("/eval",{
+    model_id:document.getElementById("ev-model").value||"base",
+    dataset_id:ds,
+    split:document.getElementById("ev-split").value,
+    use_judge:document.getElementById("ev-judge").value,
+    max_samples:num(document.getElementById("ev-max").value),
+    baseline:document.getElementById("ev-baseline").value||null});
+  document.getElementById("ev-out").textContent = "已提交评测任务 "+res.task_id+"（完成后此处显示结果/对比）";
+  setTimeout(()=>loadTasks("eval"),600);
+  pollEval(res.task_id);
+}
+async function pollEval(taskId){
+  for(let i=0;i<120;i++){
+    await new Promise(r=>setTimeout(r,3000));
+    let t;
+    try{ t = await (await fetch("/tasks/"+taskId)).json(); }catch(e){ continue; }
+    if(t.status==="failed"){ document.getElementById("ev-out").textContent = "评测失败：" + (t.error||"").slice(0,200); return; }
+    if(t.status!=="succeeded") continue;
+    const r = t.result||{};
+    if(r.comparison){ renderComparison(r); }
+    else{
+      const judgeText=judgeStatusText(r);
+      document.getElementById("ev-out").textContent =
+        `评测完成｜样本 ${r.samples}｜ROUGE-L ${r.metrics&&r.metrics.rouge_l_f}｜Judge ${judgeText}｜reliable=${r.reliable}｜gap ${r.gap_count!==undefined?r.gap_count:0}`;
+    }
+    loadAllGaps();
+    loadBreadthReports();
+    return;
+  }
+}
+async function loadBreadthReports(){
+  const el=document.getElementById("ev-breadth");
+  if(!el) return;
+  el.textContent="加载中…";
+  let rows;
+  try{ rows=await (await fetch("/analysis/breadth/reports?limit=100")).json(); }
+  catch(e){ el.textContent="加载失败："+e; return; }
+  if(!rows||!rows.length){ el.textContent="暂无广度验证报告。可先运行生物 Agent 或调用 /analysis/breadth。"; return; }
+  rows.sort((a,b)=>(b.created_at||0)-(a.created_at||0));
+  const shown=limitRows("breadthReports", rows);
+  let html=`<b>最近 ${shown.length}/${rows.length} 份广度报告</b>`;
+  html+=`<table><thead><tr><th>时间</th><th>模型</th><th>样本/类别</th><th>judge</th><th>薄弱类别</th><th>验证集来源</th><th>报告</th></tr></thead><tbody>`;
+  for(const r of shown){
+    const issues=(r.issues||[]).map(x=>`${x.category}(${fmtNum(x.judge_avg)})`).slice(0,5).join("、") || "—";
+    html+=`<tr><td>${fmtTime(r.created_at)}</td><td title="${esc(r.model_id)}">${esc(r.model_id||"")}</td>`+
+      `<td>${fmtNum(r.samples)} / ${fmtNum(r.category_count)}</td><td title="${esc(r.judge_error||"")}">${esc(judgeStatusText(r))}</td>`+
+      `<td title="${esc(issues)}">${esc(issues)}</td><td title="${esc(r.expansion_note||"")}">${esc((r.source||"").slice(0,36))}</td>`+
+      `<td>${esc((r.report_id||"").slice(0,34))}</td></tr>`;
+  }
+  html+=`</tbody></table>`;
+  html+=`<div style="color:#94a3b8;margin-top:8px">说明：这里的“自动添加/扩展验证集”指 Agent 从领域数据源构造 held-out 广度验证集；judge 对新模型按类别评分并指出广度问题，不会把训练样本泄漏进验证集。</div>`;
+  html+=moreButton("breadthReports", rows, "loadBreadthReports()");
+  el.innerHTML=html;
+}
+
+function judgeStatusText(r){
+  const status=r&&r.judge_status;
+  if(status==="succeeded"){
+    const avg=r.metrics&&r.metrics.judge_avg!==undefined?r.metrics.judge_avg:null;
+    const scored=r.judge_scored_samples!==undefined?r.judge_scored_samples:(r.judge&&r.judge.scored_samples);
+    return `已评分${avg!==null?"，均分 "+avg:""}${scored!==undefined?"（"+scored+" 条）":""}`;
+  }
+  if(status==="failed") return `失败：${(r.judge_error||"未知错误").slice(0,80)}`;
+  if(status==="unavailable") return "不可用（未执行）";
+  if(status==="disabled") return "关闭";
+  if(r&&r.judge_enabled) return r.judge?"已评分":"已开启但无分数";
+  return "关闭";
+}
+function renderComparison(r){
+  const c = r.comparison;
+  let html = `<b>对比结果</b>：目标 <code>${c.target_model}</code> vs 基线 <code>${c.baseline_model}</code>（样本 ${r.samples}）<br>`;
+  html += `<table style="margin-top:8px"><thead><tr><th>指标</th><th>基线</th><th>目标</th><th>Δ</th><th>提升%</th></tr></thead><tbody>`;
+  const label = {rouge_l_f:"ROUGE-L", bleu_1:"BLEU-1", bleu_2:"BLEU-2", judge_avg:"LLM裁判(0-5)"};
+  for(const m of c.metrics){
+    const up = m.delta>0, down = m.delta<0;
+    const color = up?"#4ade80":(down?"#f87171":"#94a3b8");
+    const pct = m.delta_pct===null?"-":(m.delta_pct>0?"+":"")+m.delta_pct+"%";
+    html += `<tr><td>${label[m.metric]||m.metric}</td><td>${m.baseline}</td><td>${m.target}</td>`+
+      `<td style="color:${color}">${m.delta>0?"+":""}${m.delta}</td><td style="color:${color}">${pct}</td></tr>`;
+  }
+  html += `</tbody></table>`;
+  document.getElementById("ev-out").innerHTML = html;
+}
+
+function fmtNum(v){ return (v===null||v===undefined)?"—":v; }
+function deltaCell(row){
+  if(row.rouge_delta===null||row.rouge_delta===undefined) return "—";
+  const up=row.rouge_delta>0, down=row.rouge_delta<0;
+  const color=up?"#4ade80":(down?"#f87171":"#94a3b8");
+  const pct=row.rouge_delta_pct===null||row.rouge_delta_pct===undefined?"":` (${row.rouge_delta_pct>0?"+":""}${row.rouge_delta_pct}%)`;
+  return `<span style="color:${color}">${row.rouge_delta>0?"+":""}${row.rouge_delta}${pct}</span>`;
+}
+async function loadIterations(){
+  const el=document.getElementById("iter-out");
+  el.textContent="加载中…";
+  let groups;
+  try{ groups=await (await fetch("/iterations")).json(); }catch(e){ el.textContent="加载失败"; return; }
+  if(!groups||!groups.length){ el.innerHTML="暂无数据集血缘。先在①标做一次数据准备(无 parent=根 v1)，再选 parent 做增量迭代即可形成链。"; return; }
+  groups.sort((a,b)=>{
+    const av=(a.versions||[]); const bv=(b.versions||[]);
+    return ((bv[bv.length-1]||{}).registered_at||0)-((av[av.length-1]||{}).registered_at||0);
+  });
+  const shownGroups=limitRows("iterations", groups);
+  let html="";
+  for(const g of shownGroups){
+    html+=`<b>血缘链</b>（根 <code>${g.root}</code>）`;
+    html+=`<table style="margin-top:8px"><thead><tr><th>迭代</th><th>数据量</th><th>新增</th><th>Loss</th><th>ROUGE-L</th><th>BLEU-1</th><th>judge</th><th>ROUGE提升</th><th>数据集</th></tr></thead><tbody>`;
+    const chainKey="chain_"+String(g.leaf||g.root).replace(/[^0-9A-Za-z_]/g,"_");
+    const versions=(g.versions||[]);
+    const rows=_panelExpand[chainKey] ? versions : versions.slice(-1);
+    for(const r of rows){
+      html+=`<tr><td>${r.version}</td><td>${fmtNum(r.sample_count)}</td><td>${r.added_count?("+"+r.added_count):"—"}</td>`+
+        `<td>${fmtNum(r.train_loss)}</td><td>${fmtNum(r.rouge_l_f)}</td><td>${fmtNum(r.bleu_1)}</td><td>${fmtNum(r.judge_avg)}</td>`+
+        `<td>${deltaCell(r)}</td><td style="color:#94a3b8">${r.dataset_id.slice(0,28)}</td></tr>`;
+    }
+    html+="</tbody></table><br>";
+    if(versions.length>1){
+      html+=`<div class="more"><button onclick="_panelExpand['${chainKey}']=!_panelExpand['${chainKey}'];loadIterations()">`+
+        (_panelExpand[chainKey] ? "收起该链（仅显示最后产出）" : `展开该链全部 ${versions.length} 轮`)+`</button></div><br>`;
+    }
+  }
+  html+=moreButton("iterations", groups, "loadIterations()");
+  el.innerHTML=html;
+  loadAllGaps();
+}
+async function loadAllGaps(){
+  const el=document.getElementById("iter-gaps");
+  let gaps;
+  try{ gaps=await (await fetch("/gaps")).json(); }catch(e){ el.textContent="加载失败"; return; }
+  if(!gaps||!gaps.length){ el.innerHTML="暂无历史薄弱点（先在④评测跑一次）。"; return; }
+  gaps.sort((a,b)=>(b.created_at||0)-(a.created_at||0));
+  const shown=limitRows("allGaps", gaps);
+  let html=`<b>共 ${gaps.length} 条历史建议</b>（从新到旧，默认最新 ${shown.length} 条）：`;
+  html+=`<table style="margin-top:8px"><thead><tr><th>迭代</th><th>类型</th><th>ROUGE</th><th>judge</th><th>问题</th><th>扩增建议</th><th>报告</th></tr></thead><tbody>`;
+  for(const gp of shown){
+    const iterBadge = gp.iteration && gp.iteration!=="-" ? `<b style=\"color:#60a5fa\">${gp.iteration}</b>` : "—";
+    html+=`<tr><td>${iterBadge}</td><td style=\"color:#fbbf24\">${gp.gap_type}</td><td>${fmtNum(gp.rouge_l_f)}</td><td>${fmtNum(gp.judge_score)}</td>`+
+      `<td>${(gp.prompt||"").slice(0,36)}</td><td style=\"color:#94a3b8\">${gp.suggestion||""}</td><td style=\"color:#64748b\">${(gp.report_id||"").slice(0,32)}</td></tr>`;
+  }
+  html+="</tbody></table>";
+  html+=moreButton("allGaps", gaps, "loadAllGaps()");
+  el.innerHTML=html;
+}
+function renderGaps(gaps){
+  const el=document.getElementById("iter-gaps");
+  if(!el) return;
+  if(!gaps||!gaps.length){ el.innerHTML="本轮无明显薄弱点(或样本太少)。"; return; }
+  let html=`<b>发现 ${gaps.length} 个薄弱点</b>（按严重度排序，指导下一轮数据补充）：`;
+  html+=`<table style="margin-top:8px"><thead><tr><th>类型</th><th>ROUGE</th><th>judge</th><th>问题</th><th>扩增建议</th></tr></thead><tbody>`;
+  for(const gp of gaps){
+    html+=`<tr><td style="color:#fbbf24">${gp.gap_type}</td><td>${fmtNum(gp.rouge_l_f)}</td><td>${fmtNum(gp.judge_score)}</td>`+
+      `<td>${(gp.prompt||"").slice(0,40)}</td><td style="color:#94a3b8">${gp.suggestion||""}</td></tr>`;
+  }
+  html+="</tbody></table>";
+  el.innerHTML=html;
+}
+
+async function agentStart(){
+  const el=document.getElementById("agent-out");
+  el.textContent="启动中…";
+  const body={
+    parent_dataset:document.getElementById("ag-parent").value||null,
+    eval_dataset_id:document.getElementById("ag-eval").value||null,
+    model_name:document.getElementById("ag-model").value||"agent-sft",
+    dataset_name:"agent-iter",
+    annotation_name:"agent-gap",
+    max_iterations:Number(document.getElementById("ag-maxit").value)||5,
+    hard_weight:Number(document.getElementById("ag-hw").value)||1,
+    train_backend:document.getElementById("ag-backend").value||"hf",
+    train_method:"lora",
+    train_device:"cpu",
+    eval_split:"valid",
+    use_judge:"auto"
+  };
+  try{
+    const s=await post("/agent/start",body);
+    renderAgentStatus(s);
+    if(agentTimer) clearInterval(agentTimer);
+    agentTimer=setInterval(agentStatus,5000);
+  }catch(e){ el.textContent="启动失败："+e; }
+}
+async function biologyAgentStart(){
+  const el=document.getElementById("agent-out");
+  el.textContent="生物专家 Agent 启动中…";
+  const body={
+    iteration_prefix:document.getElementById("bio-prefix").value||"bio-v",
+    source_name:document.getElementById("bio-source-name").value||"生物知识",
+    max_iterations:3,
+    train_backend:document.getElementById("bio-backend").value||"hf",
+    train_device:document.getElementById("bio-device").value||"cpu",
+    train_epochs:Number(document.getElementById("bio-epochs").value)||1,
+    train_max_seq_len:512,
+    eval_max_samples:Number(document.getElementById("bio-eval-max").value)||11,
+    breadth_max_samples:Number(document.getElementById("bio-breadth-max").value)||11,
+    use_judge:"auto",
+    poll_interval:5
+  };
+  try{
+    const s=await post("/agent/biology/start",body);
+    renderAgentStatus(s);
+    if(agentTimer) clearInterval(agentTimer);
+    agentTimer=setInterval(agentStatus,5000);
+  }catch(e){ el.textContent="启动失败："+e; }
+}
+async function biologyAgentStatus(){
+  const el=document.getElementById("agent-out");
+  if(!el) return;
+  try{
+    const s=await (await fetch("/agent/biology/status")).json();
+    renderAgentStatus(s);
+    if(s.active && !agentTimer) agentTimer=setInterval(agentStatus,5000);
+    if(!s.active && agentTimer){ clearInterval(agentTimer); agentTimer=null; }
+  }catch(e){ el.textContent="状态获取失败："+e; }
+}
+async function oneclickAgentStart(){
+  const el=document.getElementById("agent-out");
+  el.textContent="一键保通打包启动中…";
+  const body={
+    source_name:document.getElementById("bio-source-name").value||"生物知识",
+    collection:document.getElementById("one-coll").value||"biology",
+    iteration_prefix:document.getElementById("bio-prefix").value||"bio-v",
+    run_biology_if_missing:document.getElementById("one-run-missing").checked,
+    force_biology_run:document.getElementById("one-force").checked,
+    run_inference_probe:document.getElementById("one-infer").checked,
+    train_backend:document.getElementById("bio-backend").value||"hf",
+    train_device:document.getElementById("bio-device").value||"cpu",
+    train_epochs:Number(document.getElementById("bio-epochs").value)||1,
+    train_max_seq_len:512,
+    eval_max_samples:Number(document.getElementById("bio-eval-max").value)||11,
+    breadth_max_samples:Number(document.getElementById("bio-breadth-max").value)||11,
+    use_judge:"auto",
+    poll_interval:5
+  };
+  try{
+    const s=await post("/agent/oneclick/start",body);
+    renderAgentStatus(s);
+    if(agentTimer) clearInterval(agentTimer);
+    agentTimer=setInterval(agentStatus,5000);
+  }catch(e){ el.textContent="启动失败："+e; }
+}
+async function oneclickAgentStatus(){
+  const el=document.getElementById("agent-out");
+  if(!el) return;
+  try{
+    const s=await (await fetch("/agent/oneclick/status")).json();
+    renderAgentStatus(s);
+    if(s.active && !agentTimer) agentTimer=setInterval(agentStatus,5000);
+    if(!s.active && agentTimer){ clearInterval(agentTimer); agentTimer=null; }
+  }catch(e){ el.textContent="状态获取失败："+e; }
+}
+async function agentStatus(){
+  const el=document.getElementById("agent-out");
+  if(!el) return;
+  try{
+    const [generic,bio,oneclick]=await Promise.all([
+      fetch("/agent/status").then(r=>r.json()),
+      fetch("/agent/biology/status").then(r=>r.json()).catch(()=>({status:"idle"})),
+      fetch("/agent/oneclick/status").then(r=>r.json()).catch(()=>({status:"idle"}))
+    ]);
+    const s = oneclick.active ? oneclick : (bio.active ? bio : (generic.active ? generic : ((oneclick.task_id) ? oneclick : ((bio.task_id) ? bio : generic))));
+    renderAgentStatus(s);
+    if(s.active && !agentTimer) agentTimer=setInterval(agentStatus,5000);
+    if(!s.active && agentTimer){ clearInterval(agentTimer); agentTimer=null; }
+  }catch(e){ el.textContent="状态获取失败："+e; }
+}
+function renderAgentStatus(s){
+  const el=document.getElementById("agent-out");
+  const color=s.active?"#fbbf24":(s.status==="failed"?"#f87171":"#4ade80");
+  let html=`<b style="color:${color}">${esc(s.status||"idle")}</b> ${esc(s.message||"")}`;
+  if(s.task_id) html+=`<br>task：<code>${esc(s.task_id)}</code>`;
+  if(s.parent_dataset) html+=`　parent：<code>${esc(s.parent_dataset)}</code>`;
+  if(s.eval_dataset_id) html+=`　eval：<code>${esc(s.eval_dataset_id)}</code>`;
+  if(s.final_model_id) html+=`<br>final model：<code>${esc(s.final_model_id)}</code>`;
+  if(s.final_dataset_id) html+=`　final dataset：<code>${esc(s.final_dataset_id)}</code>`;
+  if(s.step_summary_md) html+=`<br>步骤总结：<code>${esc(s.step_summary_md)}</code>`;
+  if(s.kb_collection) html+=`　KB：<code>${esc(s.kb_collection)}</code>`;
+  if(s.package_report_md) html+=`<br>一键报告：<code>${esc(s.package_report_md)}</code>`;
+  if(s.overall_ok!==undefined){
+    html+=`<br>保通结论：<b style="color:${s.overall_ok?'#4ade80':'#fbbf24'}">${s.overall_ok?'通过':'完成但需继续迭代'}</b>`;
+  }
+  const checks=s.checks||[];
+  if(checks.length){
+    const shownChecks=limitRows("oneclickChecks", checks);
+    html+=`<table><thead><tr><th>检查项</th><th>状态</th><th>说明</th><th>产物</th></tr></thead><tbody>`;
+    for(const c of shownChecks){
+      html+=`<tr><td>${esc(c.name)}</td><td style="color:${c.ok?'#4ade80':'#f87171'}">${c.ok?'PASS':'FAIL'}</td><td>${esc(c.detail)}</td><td>${esc(c.artifact||'')}</td></tr>`;
+    }
+    html+=`</tbody></table>`;
+    html+=moreButton("oneclickChecks", checks, "agentStatus()");
+  }
+  const probs=s.problems||[];
+  if(probs.length){
+    const shownProblems=limitRows("oneclickProblems", probs);
+    html+=`<table><thead><tr><th>问题</th><th>分析</th><th>建议</th></tr></thead><tbody>`;
+    for(const p of shownProblems){
+      html+=`<tr><td style="color:#fbbf24">${esc(p.kind)}</td><td>${esc(p.detail)}</td><td style="color:#94a3b8">${esc(p.suggestion||'')}</td></tr>`;
+    }
+    html+=`</tbody></table>`;
+    html+=moreButton("oneclickProblems", probs, "agentStatus()");
+  }
+  const pkg=s.package||{};
+  if(Object.keys(pkg).length){
+    html+=`<table><thead><tr><th>打包产物</th><th>值</th></tr></thead><tbody>`;
+    for(const [k,v] of Object.entries(pkg)){
+      if(v===null || typeof v==="string" || typeof v==="number" || typeof v==="boolean"){
+        html+=`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`;
+      }
+    }
+    html+=`</tbody></table>`;
+  }
+  const sums=s.summaries||[];
+  if(sums.length){
+    const shownSums=limitRows("agentSummaries", sums.slice().sort((a,b)=>(b.iteration||0)-(a.iteration||0)));
+    html+=`<table><thead><tr><th>轮次</th><th>数据集</th><th>模型</th><th>ROUGE-L</th><th>BLEU-1</th><th>judge</th><th>gap</th><th>广度薄弱</th></tr></thead><tbody>`;
+    for(const it of shownSums){
+      const m=it.metrics||{};
+      const issues=((it.breadth||{}).issues||[]).map(x=>x.category||x).slice(0,3).join("、");
+      html+=`<tr><td>${it.iteration}</td><td title="${esc(it.dataset_id)}">${esc(it.dataset_id||"")}</td><td title="${esc(it.model_id)}">${esc(it.model_id||"")}</td>`+
+        `<td>${fmtNum(m.rouge_l_f)}</td><td>${fmtNum(m.bleu_1)}</td><td>${fmtNum(m.judge_avg)}</td><td>${it.gap_count}</td><td>${esc(issues||"—")}</td></tr>`;
+    }
+    html+=`</tbody></table>`;
+    html+=moreButton("agentSummaries", sums, "agentStatus()");
+  }
+  const allSteps=(s.steps||[]).slice().reverse();
+  const steps=limitRows("agentSteps", allSteps);
+  if(steps.length){
+    html+=`<table><thead><tr><th>步骤</th><th>状态</th><th>摘要</th></tr></thead><tbody>`;
+    for(const st of steps){
+      html+=`<tr><td>${esc(st.step)}</td><td>${esc(st.status)}</td><td>${esc(st.summary)}</td></tr>`;
+    }
+    html+=`</tbody></table>`;
+    html+=moreButton("agentSteps", allSteps, "agentStatus()");
+  }
+  const logs=(s.logs||[]).slice(-14).map(x=>esc(x)).join("\n");
+  html+=`<pre style="white-space:pre-wrap;margin-top:8px">${logs||"（无日志）"}</pre>`;
+  el.innerHTML=html;
+}
+
+async function customAgentPlan(){
+  const planEl=document.getElementById("ca-plan");
+  const brief=(document.getElementById("ca-brief").value||"").trim();
+  if(!brief){ planEl.textContent="请先描述希望强化的方向。"; return; }
+  planEl.textContent="Agent 正在整理参数建议…";
+  try{
+    const p=await post("/agent/custom/plan",{brief});
+    if(p.detail){ planEl.textContent="失败："+(typeof p.detail==="string"?p.detail:JSON.stringify(p.detail)); return; }
+    const map={
+      "ca-direction":"direction","ca-scenario":"scenario_name","ca-source":"source_name",
+      "ca-prefix":"iteration_prefix","ca-dataset-name":"dataset_name","ca-model-name":"model_name",
+      "ca-base":"base_model_path","ca-output":"output_root","ca-coll":"collection",
+      "ca-samples":"sample_count","ca-eval-samples":"eval_sample_count","ca-iters":"max_iterations",
+      "ca-gen":"data_generation_mode","ca-backend":"train_backend","ca-device":"train_device",
+      "ca-epochs":"train_epochs","ca-msl":"train_max_seq_len","ca-eval-max":"eval_max_samples",
+      "ca-breadth-max":"breadth_max_samples","ca-judge":"use_judge"
+    };
+    for(const [id,key] of Object.entries(map)){
+      const el=document.getElementById(id);
+      if(el && p[key]!==undefined && p[key]!==null) el.value=p[key];
+    }
+    const sourceLabel=p.plan_source_label||(p.plan_source==="judge"?"Judge 生成":"规则兜底");
+    let html=`<b>Agent 建议</b> <span class="pill">${esc(sourceLabel)}</span><br>`;
+    html+=`<div style="margin-top:6px">${esc(p.agent_reply||"已生成推荐参数。")}</div>`;
+    if(p.plan_source_reason) html+=`<div class="hint" style="margin-top:6px">生成依据：${esc(p.plan_source_reason)}</div>`;
+    if(p.plan_generation_note) html+=`<div class="hint">${esc(p.plan_generation_note)}</div>`;
+    const sections=Array.isArray(p.plan_sections)?p.plan_sections:[];
+    if(sections.length){
+      html+=`<div style="margin-top:10px">`;
+      for(const sec of sections){
+        const items=Array.isArray(sec.items)?sec.items:[];
+        html+=`<div style="margin-top:8px"><b>${esc(sec.title||"方案")}</b>`;
+        if(items.length){
+          html+=`<ul style="margin:6px 0 0 18px;padding:0">`;
+          for(const item of items) html+=`<li>${esc(item)}</li>`;
+          html+=`</ul>`;
+        }
+        html+=`</div>`;
+      }
+      html+=`</div>`;
+    }
+    const rp=p.recommended_params||{};
+    if(Object.keys(rp).length){
+      html+=`<div class="hint" style="margin-top:10px">推荐参数：训练样本 ${esc(rp.sample_count||p.sample_count)}，验证样本 ${esc(rp.eval_sample_count||p.eval_sample_count)}，迭代 ${esc(rp.max_iterations||p.max_iterations)} 轮，max_seq_len ${esc(rp.train_max_seq_len||p.train_max_seq_len)}。</div>`;
+    }
+    html+=`<div style="margin-top:10px">`;
+    html+=`<b>参数注意事项</b><br>`;
+    for(const n of (p.parameter_notes||[])){
+      html+=`<span class="pill">${esc(n.name)}</span><span class="hint">${esc(n.detail)}</span><br>`;
+    }
+    html+=`</div>`;
+    planEl.innerHTML=html;
+  }catch(e){ planEl.textContent="失败："+e; }
+}
+
+function customBody(){
+  return {
+    direction:document.getElementById("ca-direction").value||document.getElementById("ca-brief").value,
+    scenario_name:document.getElementById("ca-scenario").value||"通用场景",
+    source_name:document.getElementById("ca-source").value||"通用知识",
+    iteration_prefix:document.getElementById("ca-prefix").value||"custom-v",
+    dataset_name:document.getElementById("ca-dataset-name").value||"领域知识",
+    model_name:document.getElementById("ca-model-name").value||"领域专家",
+    base_model_path:document.getElementById("ca-base").value||null,
+    output_root:document.getElementById("ca-output").value||"data/custom_agents",
+    sample_count:Number(document.getElementById("ca-samples").value)||20,
+    eval_sample_count:Number(document.getElementById("ca-eval-samples").value)||8,
+    max_iterations:Number(document.getElementById("ca-iters").value)||3,
+    collection:document.getElementById("ca-coll").value||"custom",
+    data_generation_mode:document.getElementById("ca-gen").value||"auto",
+    train_backend:document.getElementById("ca-backend").value||"hf",
+    train_device:document.getElementById("ca-device").value||"cpu",
+    train_epochs:Number(document.getElementById("ca-epochs").value)||1,
+    train_max_seq_len:Number(document.getElementById("ca-msl").value)||512,
+    eval_max_samples:Number(document.getElementById("ca-eval-max").value)||8,
+    breadth_max_samples:Number(document.getElementById("ca-breadth-max").value)||8,
+    use_judge:document.getElementById("ca-judge").value||"auto",
+    run_inference_probe:document.getElementById("ca-infer").checked,
+    manual_initial_review:document.getElementById("ca-manual-initial").checked,
+    manual_iteration_review:document.getElementById("ca-manual-iter").checked,
+    infer_probe:(document.getElementById("ca-probe").value||"").trim()||null,
+    poll_interval:5
+  };
+}
+
+async function customAgentStart(){
+  const el=document.getElementById("ca-out");
+  el.textContent="通用训练 Agent 启动中…";
+  try{
+    const s=await post("/agent/custom/start",customBody());
+    if(s.detail){ el.textContent="启动失败："+(typeof s.detail==="string"?s.detail:JSON.stringify(s.detail)); return; }
+    renderCustomAgentStatus(s);
+    if(customTimer) clearInterval(customTimer);
+    customTimer=setInterval(customAgentStatus,5000);
+  }catch(e){ el.textContent="启动失败："+e; }
+}
+
+async function customAgentStatus(){
+  const el=document.getElementById("ca-out");
+  if(!el) return;
+  try{
+    const s=await (await fetch("/agent/custom/status")).json();
+    renderCustomAgentStatus(s);
+    if(s.active && !customTimer) customTimer=setInterval(customAgentStatus,5000);
+    if(!s.active && customTimer){ clearInterval(customTimer); customTimer=null; }
+  }catch(e){ el.textContent="状态获取失败："+e; }
+}
+
+async function customAgentContinue(){
+  const el=document.getElementById("ca-out");
+  el.textContent="继续运行中：将读取已保存标注并回灌训练…";
+  try{
+    const s=await post("/agent/custom/continue",{});
+    if(s.detail){ el.textContent="继续失败："+(typeof s.detail==="string"?s.detail:JSON.stringify(s.detail)); return; }
+    renderCustomAgentStatus(s);
+    if(customTimer) clearInterval(customTimer);
+    customTimer=setInterval(customAgentStatus,5000);
+  }catch(e){ el.textContent="继续失败："+e; }
+}
+
+async function customAgentExtend(){
+  const el=document.getElementById("ca-out");
+  const extra=Number(document.getElementById("ca-extra-iters")?.value)||1;
+  el.textContent=`追加 ${extra} 轮迭代中…`;
+  try{
+    const s=await post("/agent/custom/extend",{
+      source_model_id:document.getElementById("ca-resume-model")?.value||null,
+      extra_iterations:extra,
+      manual_iteration_review:document.getElementById("ca-manual-iter").checked
+    });
+    if(s.detail){ el.textContent="追加失败："+(typeof s.detail==="string"?s.detail:JSON.stringify(s.detail)); return; }
+    renderCustomAgentStatus(s);
+    if(customTimer) clearInterval(customTimer);
+    customTimer=setInterval(customAgentStatus,5000);
+  }catch(e){ el.textContent="追加失败："+e; }
+}
+
+async function customLoadResumeModels(defaultModel){
+  const sel=document.getElementById("ca-resume-model");
+  if(!sel) return;
+  try{
+    const rows=await (await fetch("/models/selectable")).json();
+    const ids=(rows||[]).map(r=>r.model_id);
+    const wanted=(customResumeModel&&ids.includes(customResumeModel))?customResumeModel:
+      ((defaultModel&&ids.includes(defaultModel))?defaultModel:(ids[0]||""));
+    sel.innerHTML=(rows||[]).map(r=>{
+      const validation=r.identity_validation==="passed"?"身份已通过":
+        (["failed","warning"].includes(r.identity_validation)?"身份有告警（不阻断）":"身份未验证");
+      return `<option value="${esc(r.model_id)}">${esc(r.model_id)}｜${validation}｜dataset=${esc(r.dataset_id||"无")}</option>`;
+    }).join("")||`<option value="">暂无可续训模型</option>`;
+    sel.value=wanted;
+    customResumeModel=sel.value;
+    if(wanted && (!customResumeProfile || customResumeProfile.model_id!==wanted)){
+      await customSelectResumeModel(wanted);
+    }else if(wanted && customResumeProfile){
+      customShowResumeContext(customResumeProfile);
+    }
+  }catch(e){ sel.innerHTML=`<option value="">模型列表加载失败</option>`; }
+}
+
+function customShowResumeContext(p){
+  const info=document.getElementById("ca-resume-context");
+  if(info && p) info.innerHTML=`已切换到：<b>${esc(p.scenario_name||p.direction)}</b>　模型：<code>${esc(p.model_id)}</code>　训练集：<code>${esc(p.dataset_id)}</code>　held-out：<code>${esc(p.eval_dataset_id)}</code>　KB：<code>${esc(p.kb_collection)}</code>`;
+}
+
+async function customSelectResumeModel(modelId){
+  customResumeModel=modelId||"";
+  const info=document.getElementById("ca-resume-context");
+  if(!modelId){ if(info) info.textContent="请选择一个已训练模型。"; return; }
+  if(info) info.textContent="正在加载模型所属项目上下文…";
+  try{
+    const response=await fetch(`/models/${encodeURIComponent(modelId)}/resume-profile`);
+    const p=await response.json();
+    if(!response.ok){ throw new Error(p.detail||`HTTP ${response.status}`); }
+    customResumeProfile=p;
+    const map={
+      "ca-direction":"direction","ca-scenario":"scenario_name","ca-source":"source_name",
+      "ca-prefix":"iteration_prefix","ca-dataset-name":"dataset_name","ca-model-name":"model_name",
+      "ca-base":"base_model_path","ca-output":"output_root","ca-coll":"collection",
+      "ca-samples":"sample_count","ca-eval-samples":"eval_sample_count","ca-iters":"max_iterations",
+      "ca-backend":"train_backend","ca-device":"train_device","ca-epochs":"train_epochs",
+      "ca-msl":"train_max_seq_len","ca-eval-max":"eval_max_samples","ca-breadth-max":"breadth_max_samples",
+      "ca-judge":"use_judge"
+    };
+    for(const [id,key] of Object.entries(map)){
+      const field=document.getElementById(id);
+      if(field && p[key]!==undefined && p[key]!==null && p[key]!=="") field.value=p[key];
+    }
+    customShowResumeContext(p);
+    const switched=await post("/agent/custom/select-model",{model_id:modelId});
+    if(switched.detail) throw new Error(typeof switched.detail==="string"?switched.detail:JSON.stringify(switched.detail));
+    renderCustomAgentStatus(switched);
+  }catch(e){
+    customResumeModel="";
+    customResumeProfile=null;
+    if(info) info.textContent=`项目上下文加载失败，已禁止续训：${e.message||e}`;
+  }
+}
+
+async function customOpenAnnotation(taskId){
+  switchTab("anno");
+  await anLoadTasks();
+  const esel=document.getElementById("an-edit-task");
+  if(esel) esel.value=taskId;
+  await anLoadEditor();
+  const csel=document.getElementById("an-task");
+  if(csel) csel.value=taskId;
+}
+
+function renderCustomAgentStatus(s){
+  const el=document.getElementById("ca-out");
+  if(!el) return;
+  const color=s.active?"#fbbf24":(s.status==="failed"?"#f87171":(s.status==="waiting_manual"?"#fbbf24":"#4ade80"));
+  let html=`<b style="color:${color}">${esc(s.status||"idle")}</b> ${esc(s.message||"")}`;
+  if(s.current_phase) html+=`<br>当前阶段：<b>${esc(s.current_phase)}</b>`;
+  if(s.task_id) html+=`<br>task：<code>${esc(s.task_id)}</code>`;
+  if(s.direction) html+=`<br>强化方向：${esc(s.direction)}`;
+  if(s.base_model_path) html+=`<br>基底模型：<code>${esc(s.base_model_path)}</code>`;
+  if(s.source) html+=`<br>source：<code>${esc(s.source)}</code>`;
+  if(s.eval_dataset_id) html+=`　held-out：<code>${esc(s.eval_dataset_id)}</code>`;
+  if(s.kb_collection) html+=`　KB：<code>${esc(s.kb_collection)}</code>`;
+  if(s.final_model_id) html+=`<br>final model：<code>${esc(s.final_model_id)}</code>`;
+  if(s.final_dataset_id) html+=`　final dataset：<code>${esc(s.final_dataset_id)}</code>`;
+  if(s.step_summary_md) html+=`<br>步骤报告：<code>${esc(s.step_summary_md)}</code>`;
+  if(s.data_generation_mode) html+=`<br>数据生成：<b>${esc(s.data_generation_mode)}</b>`;
+  const wf=s.waiting_for||{};
+  if(s.status==="waiting_manual" && wf.annotation_task){
+    html+=`<div style="margin-top:10px;border:1px solid #854d0e;background:#1f1a0b;border-radius:6px;padding:10px">`;
+    html+=`<b style="color:#fbbf24">等待人工标注审核</b><br>`;
+    html+=`标注任务：<code>${esc(wf.annotation_task)}</code>　共 ${esc(wf.count||"")} 条<br>`;
+    if(wf.annotation_file) html+=`文件：<code>${esc(wf.annotation_file)}</code><br>`;
+    html+=`请到 ⑦ 标注·回灌 加载该任务，修改答案并保存；保存后回到本页点击“继续运行”。<br>`;
+    html+=`<button class="go" style="margin-top:8px" onclick="customOpenAnnotation('${jsStr(wf.annotation_task)}')">去 ⑦ 加载标注</button>`;
+    html+=`</div>`;
+  }
+
+  const notes=s.parameter_notes||[];
+  if(notes.length){
+    html+=`<table><thead><tr><th>参数</th><th>注意事项</th></tr></thead><tbody>`;
+    for(const n of limitRows("customNotes", notes)){
+      html+=`<tr><td>${esc(n.name)}</td><td class="result">${esc(n.detail)}</td></tr>`;
+    }
+    html+=`</tbody></table>`;
+    html+=moreButton("customNotes", notes, "customAgentStatus()");
+  }
+
+  const sums=s.summaries||[];
+  if(sums.length){
+    const shown=limitRows("customSums", sums.slice().sort((a,b)=>(b.iteration||0)-(a.iteration||0)));
+    html+=`<table><thead><tr><th>轮次</th><th>数据集</th><th>模型</th><th>ROUGE-L</th><th>BLEU-1</th><th>judge</th><th>gap</th><th>广度薄弱</th></tr></thead><tbody>`;
+    for(const it of shown){
+      const m=it.metrics||{};
+      const issues=((it.breadth||{}).issues||[]).map(x=>x.category||x).slice(0,3).join("、");
+      html+=`<tr><td>${it.iteration}</td><td title="${esc(it.dataset_id)}">${esc(it.dataset_id||"")}</td><td title="${esc(it.model_id)}">${esc(it.model_id||"")}</td>`+
+        `<td>${fmtNum(m.rouge_l_f)}</td><td>${fmtNum(m.bleu_1)}</td><td>${fmtNum(m.judge_avg)}</td><td>${it.gap_count}</td><td>${esc(issues||"—")}</td></tr>`;
+    }
+    html+=`</tbody></table>`;
+    html+=moreButton("customSums", sums, "customAgentStatus()");
+  }
+
+  const allSteps=(s.steps||[]).slice().reverse();
+  const steps=limitRows("customSteps", allSteps);
+  if(steps.length){
+    html+=`<table><thead><tr><th>步骤</th><th>状态</th><th>摘要</th><th>产物</th></tr></thead><tbody>`;
+    for(const st of steps){
+      const arts=Object.entries(st.artifacts||{}).map(([k,v])=>`${k}: ${v}`).join("；");
+      html+=`<tr><td>${esc(st.step)}</td><td>${esc(st.status)}</td><td class="result">${esc(st.summary)}</td><td class="result">${esc(arts)}</td></tr>`;
+    }
+    html+=`</tbody></table>`;
+    html+=moreButton("customSteps", allSteps, "customAgentStatus()");
+  }
+  const logs=(s.logs||[]).slice(-16).map(x=>esc(x)).join("\n");
+  html+=`<div style="margin-top:12px;border-top:1px solid #1e293b;padding-top:10px">`;
+  html+=`<button class="go" onclick="customAgentContinue()">继续运行</button> `;
+  html+=`<span class="hint">用于人工审核暂停后继续 commit、训练、评测。</span>`;
+  html+=`<div class="row" style="margin-top:8px">`;
+  html+=`<div class="fld"><label>从哪个模型继续</label><select id="ca-resume-model" onchange="customSelectResumeModel(this.value)" style="min-width:420px"></select></div>`;
+  html+=`<div class="fld"><label>追加迭代轮数</label><input id="ca-extra-iters" type="number" min="1" max="8" value="1" style="width:80px"></div>`;
+  html+=`<button class="go ghost" onclick="customAgentExtend()">我想再迭代 n 次</button>`;
+  html+=`<span class="hint">已完成模型可继续生成候选回灌样本；若勾选“后续回灌人工审核”，会先暂停给你改。</span>`;
+  html+=`</div><div id="ca-resume-context" class="hint" style="margin-top:8px">选择模型后将同步切换方向、数据血缘、held-out 验证集和知识库。</div></div>`;
+  html+=`<pre style="white-space:pre-wrap;margin-top:8px">${logs||"（无日志）"}</pre>`;
+  el.innerHTML=html;
+  customLoadResumeModels(s.final_model_id||s.last_model_id||"");
+}
+
+async function ragIngest(){
+  const el=document.getElementById("rag-ing"); el.textContent="入库中…";
+  try{
+    const r=await post("/rag/ingest",{source:document.getElementById("rag-src").value,chunk_size:Number(document.getElementById("rag-cs").value),collection:ragCollection()});
+    if(r.detail){ el.textContent="失败："+JSON.stringify(r.detail); return; }
+    el.textContent=`入库完成：[${r.collection}] ${r.source} 新增 ${r.new_chunks} 块，共 ${r.total_chunks} 块（嵌入器 ${r.embedder}）`;
+    ragCollections();
+  }catch(e){ el.textContent="失败："+e; }
+}
+function ragCollection(){
+  const el=document.getElementById("rag-coll");
+  return (el&&el.value)||"default";
+}
+async function ragCollections(){
+  try{
+    const rows=await (await fetch("/rag/collections")).json();
+    const dl=document.getElementById("rag-coll-list");
+    if(dl) dl.innerHTML=(rows||[]).map(r=>`<option value="${esc(r.collection)}">${esc(r.collection)} (${r.total_chunks||0})</option>`).join("");
+    const panel=document.getElementById("rag-collections");
+    if(panel){
+      let html=`<b>知识库集合</b><table><thead><tr><th>collection</th><th>块数</th><th>来源</th><th>缺口</th><th>操作</th></tr></thead><tbody>`;
+      for(const r of (rows||[])){
+        const srcs=Object.entries(r.sources||{}).map(([k,v])=>`${k}(${v})`).join("、")||"空";
+        html+=`<tr><td><code>${esc(r.collection)}</code></td><td>${r.total_chunks||0}</td><td title="${esc(srcs)}">${esc(srcs.slice(0,48))}</td><td>${r.pending_gaps||0}</td>`+
+          `<td><button class="go ghost" style="padding:2px 10px" onclick="ragSwitch('${esc(r.collection)}')">切换</button></td></tr>`;
+      }
+      html+=`</tbody></table>`;
+      panel.innerHTML=html;
+      if((rows||[]).some(r=>r.collection==="biology") && ragCollection()==="default" && current==="rag"){
+        panel.innerHTML += `<div style="color:#fbbf24;margin-top:8px">提示：生物场景知识已写入 <code>biology</code> 集合；点“切换”即可查看。</div>`;
+      }
+    }
+  }catch(e){}
+}
+function ragSwitch(name){
+  const el=document.getElementById("rag-coll");
+  if(el) el.value=name;
+  ragStats();
+  ragLoadGaps();
+}
+async function ragStats(){
+  const el=document.getElementById("rag-ing");
+  el.textContent="查询中…";
+  try{
+    const s=await (await fetch("/rag/stats?collection="+encodeURIComponent(ragCollection()))).json();
+    const srcs=Object.keys(s.sources||{}).length
+      ? Object.entries(s.sources).map(([k,v])=>`${k}(${v}块)`).join("、")
+      : "空";
+    const ts=new Date().toLocaleTimeString();
+    el.innerHTML=`知识库 <code>${esc(s.collection||ragCollection())}</code>：<b>${s.total_chunks}</b> 块，嵌入器 <b>${s.embedder||"—"}</b>，`+
+      `待补充缺口 <b>${s.pending_gaps||0}</b><br>来源：${srcs}`+
+      `<br><span style="color:#94a3b8;font-size:11px">更新于 ${ts}</span>`;
+    const badge=document.getElementById("rag-gap-badge");
+    if(badge){ badge.innerHTML = s.pending_gaps>0 ? `<span style="background:#dc2626;color:#fff;border-radius:8px;padding:1px 8px;font-size:12px">⚠ ${s.pending_gaps} 条待补充</span>` : `<span style="color:#4ade80;font-size:12px">✓ 无缺口</span>`; }
+  }catch(e){ el.textContent="状态获取失败："+e; }
+}
+async function ragLoadGaps(){
+  const el=document.getElementById("rag-gaps"); el.textContent="加载中…";
+  try{
+    const gaps=await (await fetch("/rag/gaps?status=pending&collection="+encodeURIComponent(ragCollection()))).json();
+    if(!gaps.length){ el.innerHTML="<span style=\"color:#4ade80\">✓ 暂无缺口，知识库覆盖良好。</span>"; ragStats(); return; }
+    const shown=limitRows("ragGaps", gaps);
+    let html=`<b>${gaps.length} 条问题在知识库里没有相关内容</b>（默认最新 ${shown.length} 条）：<table style="margin-top:6px"><thead><tr><th>问题</th><th>最高分</th><th>被问次数</th><th>操作</th></tr></thead><tbody>`;
+    shown.forEach((g,i)=>{
+      const pj=encodeURIComponent(g.prompt);
+      html+=`<tr><td>${g.prompt}</td><td style="color:#fbbf24">${g.max_score}</td><td>${g.hits||1}</td><td><button class="go" style="padding:2px 10px" onclick="document.getElementById('rag-fix-${i}').style.display=''">补充知识</button></td></tr>`;
+      html+=`<tr id="rag-fix-${i}" style="display:none"><td colspan="4"><textarea id="rag-fix-txt-${i}" placeholder="粘贴权威条文/标准答案，如：发现危化品泄漏应立即向上风向撤离…" style="width:100%;min-height:60px"></textarea><div class="row" style="margin-top:6px"><button class="go" onclick="ragCommitGap('${pj}',${i})">确认入库</button> <button class="go ghost" onclick="document.getElementById('rag-fix-${i}').style.display='none'">取消</button></div><div id="rag-fix-out-${i}" class="out"></div></td></tr>`;
+    });
+    html+="</tbody></table>";
+    html+=moreButton("ragGaps", gaps, "ragLoadGaps()");
+    el.innerHTML=html;
+    ragStats();
+  }catch(e){ el.textContent="失败："+e; }
+}
+async function ragCommitGap(promptEnc, idx){
+  const out=document.getElementById("rag-fix-out-"+idx); out.textContent="入库中…";
+  const txt=document.getElementById("rag-fix-txt-"+idx).value;
+  try{
+    const r=await post("/rag/gaps/resolve",{prompt:decodeURIComponent(promptEnc),knowledge:txt,collection:ragCollection()});
+    if(r.detail){ out.textContent="失败："+JSON.stringify(r.detail); return; }
+    out.innerHTML=`<span style="color:#4ade80">✓ 已入库，知识库现 ${r.total_chunks} 块，剩余缺口 ${r.pending_left} 条。</span>`;
+    setTimeout(ragLoadGaps, 800);
+  }catch(e){ out.textContent="失败："+e; }
+}
+async function ragQuery(){
+  const el=document.getElementById("rag-out"); el.textContent="检索生成中（真实模型 CPU 可能较慢）…";
+  try{
+    const r=await post("/rag/query",{prompt:document.getElementById("rag-prompt").value,model_id:document.getElementById("rag-model").value||"base",top_k:Number(document.getElementById("rag-topk").value),collection:ragCollection()});
+    if(r.detail){ el.textContent="失败："+JSON.stringify(r.detail); return; }
+    const rag=r.rag||{};
+    let html=`<b>回答</b>（${r.mode}/${r.backend}，库 ${esc(rag.collection||ragCollection())}，命中 ${rag.hit} 条知识）：<br>${(r.answer||"").slice(0,400)}<br><br><b>检索上下文</b>：`;
+    html+=`<table style="margin-top:6px"><thead><tr><th>score</th><th>来源</th><th>段落</th></tr></thead><tbody>`;
+    for(const d of (rag.retrieved||[])){ html+=`<tr><td>${d.score}</td><td>${d.source}</td><td style="color:#94a3b8">${(d.text||"").slice(0,60)}</td></tr>`; }
+    html+="</tbody></table>";
+    el.innerHTML=html;
+  }catch(e){ el.textContent="失败："+e; }
+}
+
+async function anCreate(){
+  const el=document.getElementById("an-out"); el.textContent="生成中…";
+  try{
+    const r=await post("/annotation/create",{name:document.getElementById("an-name").value,max_items:num(document.getElementById("an-max").value)});
+    el.innerHTML=`已生成标注任务 <b>${r.task_id}</b>，共 ${r.count} 条待标注。<br>请编辑文件：<code>${r.rel_path}</code>（在 annotation 列填写答案）`;
+    anLoadTasks();
+  }catch(e){ el.textContent="失败："+e; }
+}
+async function anLoadTasks(){
+  let tasks;
+  try{ tasks=await (await fetch("/annotation/tasks")).json(); }catch(e){ return; }
+  tasks.sort((a,b)=>String(b.task_id||"").localeCompare(String(a.task_id||"")));
+  const shown=limitRows("annotationTasks", tasks);
+  const html=`<table><thead><tr><th>任务</th><th>总数</th><th>已标注</th><th>待标注</th><th>文件</th></tr></thead><tbody>`+
+    shown.map(t=>`<tr><td>${t.task_id}</td><td>${t.count}</td><td style="color:#4ade80">${t.annotated}</td><td style="color:#fbbf24">${t.pending}</td><td style="color:#94a3b8">${t.rel_path}</td></tr>`).join("")+
+    `</tbody></table>`;
+  document.getElementById("an-tasks").innerHTML = tasks.length ? html + moreButton("annotationTasks", tasks, "anLoadTasks()") : "暂无标注任务";
+  // 回灌下拉
+  const sel=document.getElementById("an-task"); const cur=sel.value;
+  sel.innerHTML = tasks.map(t=>`<option value="${t.task_id}">${t.task_id}（${t.annotated}/${t.count}）</option>`).join("")||`<option value="">（先生成任务）</option>`;
+  if(tasks.find(t=>t.task_id===cur)) sel.value=cur;
+  // parent 下拉用数据集
+  const tds = await (await fetch("/datasets")).json();
+  const psel=document.getElementById("an-parent"); const curp=psel.value;
+  psel.innerHTML=`<option value="">无</option>`+ (tds||[]).map(d=>`<option value="${d.dataset_id}">${d.dataset_id}</option>`).join("");
+  if(curp) psel.value=curp;
+  // 编辑器任务下拉
+  const esel=document.getElementById("an-edit-task"); const cure=esel.value;
+  esel.innerHTML = tasks.map(t=>`<option value="${t.task_id}">${t.task_id}（${t.annotated}/${t.count}）</option>`).join("")||`<option value="">（先生成任务）</option>`;
+  if(tasks.find(t=>t.task_id===cure)) esel.value=cure;
+  anLoadCoverage();
+}
+async function anCommit(){
+  const tid=document.getElementById("an-task").value;
+  const el=document.getElementById("an-commit");
+  if(!tid){ el.textContent="请先生成/选择标注任务"; return; }
+  const auto=document.getElementById("an-auto").checked;
+  el.textContent="回灌中…";
+  try{
+    const r=await post("/annotation/commit",{task_id:tid,name:document.getElementById("an-dsname").value,parent:document.getElementById("an-parent").value||null,hard_weight:Number(document.getElementById("an-hw").value)||1,auto_train:auto});
+    if(r.detail){ el.textContent="失败："+(typeof r.detail==="string"?r.detail:JSON.stringify(r.detail)); return; }
+    let msg=`回灌完成：已标注 ${r.annotated}/${r.total} → 新数据集 <b>${r.dataset_id}</b>`+
+      `（共 ${r.dataset_count} 条${r.parent_dataset?("，继承自 "+r.parent_dataset+"，新增 "+r.added_count):""}）。`;
+    if(r.auto_train){ msg+=`<br><span style="color:#4ade80">✓ 已自动排训练任务 ${r.train_task_id}</span>，可到 ②训练页查看进度。`; }
+    else{ msg+="<br>可到 ②训练页选该数据集开始训练。"; }
+    el.innerHTML=msg;
+    refreshDatasets();
+  }catch(e){ el.textContent="失败："+e; }
+}
+async function anLoadCoverage(){
+  const el=document.getElementById("an-coverage");
+  try{
+    const c=await (await fetch("/annotation/coverage")).json();
+    const badge=document.getElementById("an-cov-badge");
+    if(badge){ badge.innerHTML=`<span style="color:${c.pending>0?'#fbbf24':'#4ade80'};font-size:12px">${c.annotated}/${c.total}（${c.overall_pct}%）</span>`; }
+    if(!c.total){ el.textContent="暂无标注任务。"; return; }
+    function tbl(rows,label,panel){
+      const shown=limitRows(panel, rows||[]);
+      return `<b>${label}</b><table style="margin:6px 0"><thead><tr><th>${label}</th><th>已标</th><th>待标</th><th>覆盖率</th></tr></thead><tbody>`+
+        shown.map(r=>`<tr><td>${r.key}</td><td style="color:#4ade80">${r.annotated}</td><td style="color:#fbbf24">${r.pending}</td><td>${bar(r.pct)}</td></tr>`).join("")+`</tbody></table>`+
+        moreButton(panel, rows||[], "anLoadCoverage()");
+    }
+    function bar(pct){ const w=Math.round(pct); return `<span style="display:inline-block;width:80px;background:#334155;border-radius:4px;vertical-align:middle"><span style="display:inline-block;height:8px;width:${w}%;background:${pct>=100?'#4ade80':'#fbbf24'};border-radius:4px"></span></span> ${pct}%`; }
+    el.innerHTML=`总体：${c.annotated}/${c.total}（${c.overall_pct}%）`+tbl(c.by_gap_type,"按薄弱点类型","coverageType")+tbl(c.by_iteration,"按迭代","coverageIter");
+  }catch(e){ el.textContent="失败："+e; }
+}
+async function anLoadEditor(){
+  const tid=document.getElementById("an-edit-task").value;
+  const el=document.getElementById("an-editor");
+  if(!tid){ el.textContent="请先选择标注任务"; return; }
+  el.textContent="加载中…";
+  try{
+    const r=await (await fetch("/annotation/tasks/"+encodeURIComponent(tid))).json();
+    if(r.detail){ el.textContent="失败："+JSON.stringify(r.detail); return; }
+    el.dataset.taskId=tid;
+    let html=`<table><thead><tr><th style="width:32%">问题</th><th style="width:28%">参考</th><th>答案(可编辑)</th></tr></thead><tbody>`;
+    r.rows.forEach((row,i)=>{
+      const ann=(row.annotation||"").replace(/"/g,"&quot;");
+      html+=`<tr><td>${row.prompt||""}<br><span style="color:#94a3b8;font-size:11px">${row.gap_type||""} ${row.iteration||""}</span></td>`+
+        `<td style="color:#94a3b8">${(row.reference||"").slice(0,80)}</td>`+
+        `<td><textarea id="an-ed-${i}" style="width:100%;min-height:48px">${ann}</textarea></td></tr>`;
+    });
+    html+="</tbody></table>";
+    el.innerHTML=html;
+  }catch(e){ el.textContent="失败："+e; }
+}
+async function anSaveEditor(){
+  const el=document.getElementById("an-editor");
+  const tid=el.dataset.taskId;
+  if(!tid){ el.textContent="请先加载标注任务"; return; }
+  const anns={};
+  document.querySelectorAll("[id^=an-ed-]").forEach(t=>{ anns[t.id.replace("an-ed-","")]=t.value; });
+  try{
+    const r=await post("/annotation/save",{task_id:tid,annotations:anns});
+    if(r.detail){ alert("保存失败："+JSON.stringify(r.detail)); return; }
+    alert(`已保存：已标注 ${r.annotated}/${r.count}`);
+    anLoadTasks();
+  }catch(e){ alert("保存失败："+e); }
+}
+async function anLoadResolved(){
+  const el=document.getElementById("an-resolved");
+  try{
+    const data=await (await fetch("/annotation/resolved")).json();
+    if(!data.length){ el.textContent="暂无回灌记录（回灌一次后即可追踪）。"; return; }
+    data.sort((a,b)=>(b.committed_at||0)-(a.committed_at||0));
+    const imp=document.getElementById("impact-dataset");
+    if(imp && !imp.value && data[0] && data[0].dataset_id) imp.value=data[0].dataset_id;
+    const shownGroups=limitRows("resolvedGroups", data);
+    let html="";
+    shownGroups.forEach((d,gi)=>{
+      html+=`<div style="margin:8px 0"><b>${d.dataset_id}</b>（解决 ${d.resolved_count} 条${d.hard_weight>1?("，加权"+d.hard_weight+"x"):""}${d.parent_dataset?("，继承 "+d.parent_dataset):""}）`;
+      const panel=`resolvedItems_${gi}`;
+      const items=limitRows(panel, d.items||[]);
+      html+=`<table style="margin:4px 0"><thead><tr><th>问题</th><th>回灌前 judge/ROUGE</th><th>回灌后 judge/ROUGE</th><th>状态</th><th>评测说明</th></tr></thead><tbody>`;
+      items.forEach(it=>{
+        const b=it.before?`${it.before.judge??"—"} / ${it.before.rouge_l_f??"—"}`:"—";
+        const a=it.after?`${it.after.judge??"—"} / ${it.after.rouge_l_f??"—"}`:"—";
+        const color=it.status==="improved"?"#4ade80":it.status==="not_in_eval"?"#94a3b8":it.status==="pending_eval"?"#93c5fd":"#fbbf24";
+        const label=it.status==="improved"?"↑提升":it.status==="not_in_eval"?"未纳入固定评测集":it.status==="pending_eval"?"待后续评测":it.status==="after_only"?"仅有回灌后":"持平/下降";
+        html+=`<tr><td>${esc(it.prompt)}</td><td>${b}</td><td>${a}</td><td style="color:${color}">${label}</td><td style="color:#94a3b8">${esc(it.eval_note||"")}</td></tr>`;
+      });
+      html+="</tbody></table>";
+      html+=moreButton(panel, d.items||[], "anLoadResolved()");
+      html+="</div>";
+    });
+    html+=moreButton("resolvedGroups", data, "anLoadResolved()");
+    el.innerHTML=html;
+  }catch(e){ el.textContent="失败："+e; }
+}
+async function impactRun(){
+  const el=document.getElementById("impact-out");
+  el.textContent="正在生成 impact 验证集并评测前后模型。真实模型 CPU 可能需要一段时间…";
+  const dataset=(document.getElementById("impact-dataset").value||"").trim();
+  const body={
+    dataset_id:dataset||null,
+    max_items:Number(document.getElementById("impact-max").value)||12,
+    variants_per_prompt:1,
+    use_judge:document.getElementById("impact-judge").value||"auto",
+    create_patch_task:document.getElementById("impact-patch").checked,
+    patch_task_name:"impact-gap"
+  };
+  try{
+    const r=await post("/analysis/impact/run", body);
+    if(r.detail){ el.textContent="失败："+(typeof r.detail==="string"?r.detail:JSON.stringify(r.detail)); return; }
+    renderImpactReport(r, el);
+    anLoadTasks();
+  }catch(e){ el.textContent="失败："+e; }
+}
+async function impactLoadReports(){
+  const el=document.getElementById("impact-out");
+  if(!el) return;
+  try{
+    const rows=await (await fetch("/analysis/impact/reports?limit=50")).json();
+    if(!rows||!rows.length){ el.textContent="暂无回灌效果验证报告。"; return; }
+    renderImpactReports(rows, el);
+  }catch(e){ el.textContent="加载失败："+e; }
+}
+function impactMetricLine(r){
+  const bm=r.before_metrics||{}, am=r.after_metrics||{};
+  const jd=r.judge_delta;
+  const rd=r.rouge_delta;
+  const jc=jd==null?"#94a3b8":(jd>0?"#4ade80":(jd<0?"#f87171":"#94a3b8"));
+  const rc=rd>0?"#4ade80":(rd<0?"#f87171":"#94a3b8");
+  return `before judge/ROUGE：${fmtNum(bm.judge_avg)} / ${fmtNum(bm.rouge_l_f)}　`+
+    `after：${fmtNum(am.judge_avg)} / ${fmtNum(am.rouge_l_f)}　`+
+    `Δjudge：<b style="color:${jc}">${fmtNum(jd)}</b>　ΔROUGE：<b style="color:${rc}">${fmtNum(rd)}</b>`;
+}
+function renderImpactReport(r, el){
+  let html=`<b>${esc(r.report_id||"impact report")}</b><br>`;
+  html+=`回灌数据集：<code>${esc(r.dataset_id||"")}</code>　impact 验证集：<code>${esc(r.impact_dataset_id||"")}</code><br>`;
+  html+=`模型：before <code>${esc(r.before_model_id||"")}</code> → after <code>${esc(r.after_model_id||"")}</code><br>`;
+  html+=impactMetricLine(r)+`<br>`;
+  html+=`改善：<b style="color:#4ade80">${r.improved_count||0}</b>/${r.samples||0}　待补漏：<b style="color:${(r.weak_count||0)>0?'#fbbf24':'#4ade80'}">${r.weak_count||0}</b>`;
+  const pt=r.patch_task||{};
+  if(pt.task_id) html+=`<br>已生成补漏标注任务：<code>${esc(pt.task_id)}</code>（${pt.count||0} 条，答案已预填，可直接回灌或人工复核）`;
+  html+=`<table><thead><tr><th>验证题</th><th>before judge/ROUGE</th><th>after judge/ROUGE</th><th>Δ</th><th>状态</th></tr></thead><tbody>`;
+  const pairs=limitRows("impactPairs_"+(r.report_id||"latest"), r.pairs||[]);
+  for(const p of pairs){
+    const b=p.before||{}, a=p.after||{};
+    const status=p.improved?"提升":(p.weak_after?"需补漏":"持平");
+    const color=p.improved?"#4ade80":(p.weak_after?"#fbbf24":"#94a3b8");
+    html+=`<tr><td>${esc((p.prompt||"").slice(0,80))}</td><td>${fmtNum(b.judge)} / ${fmtNum(b.rouge_l_f)}</td><td>${fmtNum(a.judge)} / ${fmtNum(a.rouge_l_f)}</td>`+
+      `<td>${fmtNum(p.judge_delta)} / ${fmtNum(p.rouge_delta)}</td><td style="color:${color}">${status}</td></tr>`;
+  }
+  html+=`</tbody></table>`;
+  html+=moreButton("impactPairs_"+(r.report_id||"latest"), r.pairs||[], "impactLoadReports()");
+  el.innerHTML=html;
+}
+function renderImpactReports(rows, el){
+  const shown=limitRows("impactReports", rows);
+  let html=`<b>回灌效果验证报告</b>（最新 ${shown.length}/${rows.length}）：`;
+  html+=`<table><thead><tr><th>时间</th><th>回灌数据集</th><th>样本</th><th>before→after</th><th>指标变化</th><th>改善/补漏</th><th>补漏任务</th></tr></thead><tbody>`;
+  for(const r of shown){
+    const pt=r.patch_task||{};
+    html+=`<tr><td>${fmtTime(r.created_at)}</td><td title="${esc(r.dataset_id)}">${esc((r.dataset_id||"").slice(0,28))}</td><td>${r.samples||0}</td>`+
+      `<td title="${esc((r.before_model_id||"")+" -> "+(r.after_model_id||""))}">${esc((r.before_model_id||"").slice(0,14))} → ${esc((r.after_model_id||"").slice(0,14))}</td>`+
+      `<td>${impactMetricLine(r)}</td><td>${r.improved_count||0}/${r.samples||0}，补漏 ${r.weak_count||0}</td><td>${pt.task_id?esc(pt.task_id):"—"}</td></tr>`;
+  }
+  html+=`</tbody></table>`;
+  html+=moreButton("impactReports", rows, "impactLoadReports()");
+  if(shown[0]) html+=`<div style="margin-top:8px;color:#94a3b8">${esc(shown[0].method_note||"")}</div>`;
+  el.innerHTML=html;
+}
+
+refreshMode(); refreshDataSources(); refreshDatasets(); refreshModels(); ragCollections(); dpToggleSourceMode(); switchTab(initialTabFromUrl());
+setInterval(()=>{
+  if(current==="agent") agentStatus();
+  else if(current==="custom") customAgentStatus();
+  else if(current!=="iter"&&current!=="rag"&&current!=="anno") loadTasks(current);
+}, 3000);
+
+/* ===== ⑩ 对话 ===== */
+let chatSessionId = null;
+function chatAppend(role, text, isTool){
+  const box = document.getElementById("chat-messages");
+  if(box.querySelector("p[style*='999']")) box.innerHTML="";
+  const div = document.createElement("div");
+  const color = role==="user" ? "#0066cc" : isTool ? "#888" : "#333";
+  const bg = role==="user" ? "#e7f3ff" : isTool ? "#f0f0f0" : "#fff";
+  const label = role==="user" ? "我" : isTool ? "工具" : "Agent";
+  div.style.cssText = `margin:6px 0;padding:8px 12px;border-radius:8px;background:${bg};color:${color};`;
+  div.innerHTML = `<b>${label}：</b>${esc(text).replace(/\n/g,"<br>")}`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+async function createSession(){
+  const res = await fetch("/chat/session", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({memory_window:10})});
+  const d = await res.json();
+  if(d.session_id){
+    chatSessionId = d.session_id;
+    document.getElementById("chat-status").textContent = "会话已创建：" + d.session_id.slice(0,8);
+    loadSessions();
+    document.getElementById("chat-messages").innerHTML = `<p style="color:#999;text-align:center;">会话已创建，输入问题开始对话。</p>`;
+  }
+}
+async function loadSessions(){
+  const res = await fetch("/chat/sessions");
+  const d = await res.json();
+  const sel = document.getElementById("chat-session");
+  sel.innerHTML = '<option value="">-- 选择会话 --</option>';
+  for(const s of (d.sessions||[])){
+    const opt = document.createElement("option");
+    opt.value = s; opt.textContent = s.slice(0,12);
+    if(s===chatSessionId) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  sel.onchange = function(){ if(this.value){ chatSessionId=this.value; loadHistory(); } };
+}
+async function loadHistory(){
+  if(!chatSessionId) return;
+  const res = await fetch("/chat/sessions/"+chatSessionId);
+  const d = await res.json();
+  document.getElementById("chat-messages").innerHTML = "";
+  for(const m of (d.messages||[])){
+    chatAppend(m.role, m.content, false);
+  }
+}
+async function sendChat(){
+  const input = document.getElementById("chat-input");
+  const msg = input.value.trim();
+  if(!msg || !chatSessionId){ alert("请先创建会话"); return; }
+  input.value = "";
+  chatAppend("user", msg);
+  document.getElementById("chat-status").textContent = "思考中...";
+  try{
+    const res = await fetch("/chat", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({session_id:chatSessionId, message:msg})});
+    const d = await res.json();
+    if(d.answer) chatAppend("assistant", d.answer);
+    if(d.tool_calls){
+      for(const t of d.tool_calls){
+        chatAppend("tool", `[${t.name}] ${JSON.stringify(t.args)} -> ${JSON.stringify(t.result).slice(0,200)}`, true);
+      }
+    }
+    document.getElementById("chat-status").textContent = "完成";
+  }catch(e){ document.getElementById("chat-status").textContent = "错误: "+e.message; }
+}
+async function sendChatStream(){
+  const input = document.getElementById("chat-input");
+  const msg = input.value.trim();
+  if(!msg || !chatSessionId){ alert("请先创建会话"); return; }
+  input.value = "";
+  chatAppend("user", msg);
+  document.getElementById("chat-status").textContent = "流式生成中...";
+  const res = await fetch("/chat/stream", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({session_id:chatSessionId, message:msg})});
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let assistantDiv = null;
+  let assistantText = "";
+  while(true){
+    const {done, value} = await reader.read();
+    if(done) break;
+    buffer += decoder.decode(value, {stream:true});
+    const lines = buffer.split("\n");
+    buffer = lines.pop();
+    for(const line of lines){
+      if(line.startsWith("data: ")){
+        try{
+          const evt = JSON.parse(line.slice(6));
+          if(evt.type === "token"){
+            if(!assistantDiv){
+              const box = document.getElementById("chat-messages");
+              assistantDiv = document.createElement("div");
+              assistantDiv.style.cssText = "margin:6px 0;padding:8px 12px;border-radius:8px;background:#fff;color:#333;";
+              box.appendChild(assistantDiv);
+            }
+            assistantText += evt.content;
+            assistantDiv.innerHTML = "<b>Agent：</b>" + esc(assistantText).replace(/\n/g,"<br>");
+            document.getElementById("chat-messages").scrollTop = 999999;
+          } else if(evt.type === "tool_start"){
+            chatAppend("tool", `[${evt.tool}] 调用中...`, true);
+          } else if(evt.type === "tool_end"){
+            chatAppend("tool", `[${evt.tool}] 完成`, true);
+          } else if(evt.type === "done"){
+            document.getElementById("chat-status").textContent = "完成";
+          } else if(evt.type === "error"){
+            document.getElementById("chat-status").textContent = "错误: " + evt.content;
+          }
+        }catch(e){}
+      }
+    }
+  }
+  document.getElementById("chat-status").textContent = "完成";
+}
+</script>
+</body>
+</html>

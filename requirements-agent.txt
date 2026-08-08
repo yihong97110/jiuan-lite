@@ -1,0 +1,7 @@
+# LangChain Agent 对话功能依赖
+# 安装：pip install -r requirements-agent.txt
+# 安装后 /chat 系列 API 可用，Agent 可对接 vLLM/DeepSeek/方舟等 OpenAI 兼容端点
+
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-openai>=0.1.0

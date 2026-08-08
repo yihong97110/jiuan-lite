@@ -1,0 +1,34 @@
+{
+  "model_id": "qwen0.5b-sft-20260713-184323",
+  "dataset_id": "emergency-sft-20260713-124917",
+  "split": "valid",
+  "mode": "real",
+  "reliable": true,
+  "judge": {
+    "avg_score": 4.0,
+    "normalized": 0.8,
+    "scored_samples": 1
+  },
+  "judge_enabled": true,
+  "samples": 1,
+  "metrics": {
+    "rouge_l_f": 0.1667,
+    "bleu_1": 0.2459,
+    "bleu_2": 0.0833,
+    "judge_avg": 4.0
+  },
+  "total_tokens": 93,
+  "created_at": 1784001415.2881575,
+  "details": [
+    {
+      "prompt": "简述洪涝灾害的主要预防措施。",
+      "reference": "洪涝灾害预防包括：加强堤防与排涝设施建设、监测预警降雨与水位、及时转移低洼地带人员、储备应急物资、制定并演练撤离预案。",
+      "prediction": "1. 加强城市排水系统建设；2. 建立健全防洪排涝设施和机制；3. 修建蓄滞洪区；4. 防治水土流失；5. 提高公众的防灾减灾意识。",
+      "rouge_l_f": 0.1667,
+      "bleu_1": 0.2459,
+      "bleu_2": 0.0833,
+      "judge_score": 4,
+      "judge_reason": "待测回答基本覆盖了参考答案中的关键措施，如排水系统、防洪设施、蓄滞洪区等，但缺少监测预警和人员转移的具体内容，略有欠缺。"
+    }
+  ]
+}

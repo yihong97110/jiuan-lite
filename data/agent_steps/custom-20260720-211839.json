@@ -1,0 +1,680 @@
+{
+  "active": false,
+  "status": "failed",
+  "message": "模型身份回归失败，回答包含跨领域身份：来自阿里云；prompt=你是谁？",
+  "progress": "done",
+  "task_id": "f920b988590a",
+  "params": {
+    "mode": "custom",
+    "direction": "客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议",
+    "scenario_name": "客服质检-身份隔离重训",
+    "source_name": "客服质检知识-v2",
+    "iteration_prefix": "csqa-v",
+    "dataset_name": "客服质检知识-v2",
+    "model_name": "客服质检助手-v2",
+    "base_model_path": null,
+    "output_root": "data/custom_agents",
+    "sample_count": 20,
+    "eval_sample_count": 8,
+    "max_iterations": 3,
+    "collection": "customer-service-qa-v2",
+    "data_generation_mode": "auto",
+    "train_backend": "hf",
+    "train_device": "cpu",
+    "train_epochs": 1,
+    "train_max_seq_len": 512,
+    "eval_max_samples": 8,
+    "breadth_max_samples": 8,
+    "use_judge": "auto",
+    "run_inference_probe": true,
+    "infer_probe": "你是谁？",
+    "poll_interval": 2.0,
+    "manual_initial_review": false,
+    "manual_iteration_review": false
+  },
+  "direction": "客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议",
+  "started_at": 1784550916.8374085,
+  "logs": [
+    "[20:35:16] Judge 生成不可用，降级为模板生成：Judge 生成接口 HTTP 429",
+    "[20:35:16] 读取源文件 E:\\all-ex\\jiuan-lite\\data\\custom_agents\\客服质检-身份隔离重训-20260720-203516\\客服质检知识-v2_heldout.jsonl",
+    "[20:35:16] 原始样本 8 条",
+    "[20:35:16] 开始清洗（共 8 条待处理）",
+    "[20:35:16] 清洗完成：保留 8 条(丢弃 0)，切分 train 1 / valid 7",
+    "[20:35:17] 文档 客服质检知识-v2_kb.md 切分为 15 块",
+    "[20:35:18] 知识库[customer-service-qa-v2]现有 30 块（嵌入器 tfidf）",
+    "[20:35:18] 已标注 7/7 条 → 写入 source custom-csqa-v1-ann-20260720-203516-committed.jsonl",
+    "[20:35:18] 读取源文件 E:\\all-ex\\jiuan-lite\\data\\annotations\\custom-csqa-v1-ann-20260720-203516-committed.jsonl",
+    "[20:35:18] 原始样本 7 条",
+    "[20:35:18] 开始清洗（共 7 条待处理）",
+    "[20:35:18] 清洗完成：保留 7 条(丢弃 0)，切分 train 6 / valid 1",
+    "[20:35:18] csqa-v1 训练 子任务 e6699519af1f -> pending",
+    "[20:35:20] csqa-v1 训练 子任务 e6699519af1f -> running",
+    "[20:35:34] csqa-v1 训练 子任务 e6699519af1f -> running (1/6 steps)",
+    "[20:35:36] csqa-v1 训练 子任务 e6699519af1f -> running (2/6 steps)",
+    "[20:35:40] csqa-v1 训练 子任务 e6699519af1f -> running (3/6 steps)",
+    "[20:35:42] csqa-v1 训练 子任务 e6699519af1f -> running (4/6 steps)",
+    "[20:35:44] csqa-v1 训练 子任务 e6699519af1f -> running (5/6 steps)",
+    "[20:35:48] csqa-v1 训练 子任务 e6699519af1f -> succeeded (done)",
+    "[20:35:50] 推理后端: transformers",
+    "[20:35:54] 加载基座 E:\\all-ex\\jiuan-lite\\data\\registry\\base\\qwen2.5-0.5b-instruct + LoRA adapter E:\\all-ex\\jiuan-lite\\data\\models\\csqa-v1-客服质检助手-v2-20260720-203522\\weights（设备 cpu）",
+    "[20:36:06] 推理后端: transformers",
+    "[20:36:12] csqa-v1 推理 子任务 18eafee07281 -> pending",
+    "[20:36:14] csqa-v1 推理 子任务 18eafee07281 -> running",
+    "[20:36:34] csqa-v1 推理 子任务 18eafee07281 -> succeeded",
+    "[20:36:34] csqa-v1 评测 子任务 d0ab4589a176 -> pending",
+    "[20:36:36] csqa-v1 评测 子任务 d0ab4589a176 -> running",
+    "[20:37:11] csqa-v1 评测 子任务 d0ab4589a176 -> running (infer 1/7)",
+    "[20:37:35] csqa-v1 评测 子任务 d0ab4589a176 -> running (infer 2/7)",
+    "[20:37:57] csqa-v1 评测 子任务 d0ab4589a176 -> running (infer 3/7)",
+    "[20:38:19] csqa-v1 评测 子任务 d0ab4589a176 -> running (infer 4/7)",
+    "[20:38:41] csqa-v1 评测 子任务 d0ab4589a176 -> running (infer 5/7)",
+    "[20:39:04] csqa-v1 评测 子任务 d0ab4589a176 -> running (infer 6/7)",
+    "[20:39:10] csqa-v1 评测 子任务 d0ab4589a176 -> running (judge 6/7)",
+    "[20:39:12] csqa-v1 评测 子任务 d0ab4589a176 -> succeeded (judge 7/7)",
+    "[20:39:12] 广度验证读取 8 条样本，类别 7 个",
+    "[20:41:32] 广度 judge 调用失败，后续以字面指标为主：连接裁判服务失败(https://ark.cn-beijing.volces.com/api/plan/v3): HTTP Error 429: Too Many Requests",
+    "[20:41:32] 广度分析完成：7 个类别，薄弱类别 7 个，报告 breadth-csqa-v1-_-v2-20260720-203522-20260720-204132.json",
+    "[20:51:30] Judge 生成不可用，降级为模板生成：Judge 生成接口 HTTP 429",
+    "[20:51:31] 已标注 6/6 条 → 写入 source custom-csqa-v2-ann-20260720-205130-committed.jsonl",
+    "[20:51:31] 读取源文件 E:\\all-ex\\jiuan-lite\\data\\annotations\\custom-csqa-v2-ann-20260720-205130-committed.jsonl",
+    "[20:51:31] 原始样本 6 条",
+    "[20:51:31] 继承父数据集 csqa-v1-客服质检知识-v2-20260720-203518：7 条，与新增 6 条合并",
+    "[20:51:31] 开始清洗（共 13 条待处理）",
+    "[20:51:31] 清洗完成：保留 13 条(丢弃 0)，切分 train 11 / valid 2，继承自 csqa-v1-客服质检知识-v2-20260720-203518 (新增 6 条)",
+    "[20:51:31] csqa-v2 训练 子任务 1f9d1290c8ec -> pending",
+    "[20:52:15] csqa-v2 训练 子任务 1f9d1290c8ec -> running",
+    "[20:52:33] csqa-v2 训练 子任务 1f9d1290c8ec -> running (1/11 steps)",
+    "[20:52:37] csqa-v2 训练 子任务 1f9d1290c8ec -> running (2/11 steps)",
+    "[20:52:41] csqa-v2 训练 子任务 1f9d1290c8ec -> running (3/11 steps)",
+    "[20:52:46] csqa-v2 训练 子任务 1f9d1290c8ec -> running (4/11 steps)",
+    "[20:52:50] csqa-v2 训练 子任务 1f9d1290c8ec -> running (5/11 steps)",
+    "[20:52:56] csqa-v2 训练 子任务 1f9d1290c8ec -> running (6/11 steps)",
+    "[20:53:00] csqa-v2 训练 子任务 1f9d1290c8ec -> running (7/11 steps)",
+    "[20:53:02] csqa-v2 训练 子任务 1f9d1290c8ec -> running (8/11 steps)",
+    "[20:53:06] csqa-v2 训练 子任务 1f9d1290c8ec -> running (9/11 steps)",
+    "[20:53:12] csqa-v2 训练 子任务 1f9d1290c8ec -> running (10/11 steps)",
+    "[20:53:19] csqa-v2 训练 子任务 1f9d1290c8ec -> running (done)",
+    "[20:53:21] csqa-v2 训练 子任务 1f9d1290c8ec -> succeeded (done)",
+    "[20:53:23] 推理后端: transformers",
+    "[20:53:23] 加载基座 E:\\all-ex\\jiuan-lite\\data\\registry\\base\\qwen2.5-0.5b-instruct + LoRA adapter E:\\all-ex\\jiuan-lite\\data\\models\\csqa-v2-客服质检助手-v2-20260720-205218\\weights（设备 cpu）",
+    "[21:18:46] 已通过 Judge/LLM 生成 3 条训练样本",
+    "[21:18:46] 已标注 6/6 条 → 写入 source custom-csqa-v2-ann-20260720-211839-committed.jsonl",
+    "[21:18:46] 读取源文件 E:\\all-ex\\jiuan-lite\\data\\annotations\\custom-csqa-v2-ann-20260720-211839-committed.jsonl",
+    "[21:18:46] 原始样本 6 条",
+    "[21:18:46] 继承父数据集 csqa-v1-客服质检知识-v2-20260720-203518：7 条，与新增 6 条合并",
+    "[21:18:46] 开始清洗（共 13 条待处理）",
+    "[21:18:46] 清洗完成：保留 10 条(丢弃 3)，切分 train 8 / valid 2，继承自 csqa-v1-客服质检知识-v2-20260720-203518 (新增 3 条)",
+    "[21:18:46] csqa-v2 训练 子任务 1be842be21a8 -> pending",
+    "[21:18:48] csqa-v2 训练 子任务 1be842be21a8 -> running",
+    "[21:19:06] csqa-v2 训练 子任务 1be842be21a8 -> running (1/8 steps)",
+    "[21:19:08] csqa-v2 训练 子任务 1be842be21a8 -> running (2/8 steps)",
+    "[21:19:12] csqa-v2 训练 子任务 1be842be21a8 -> running (3/8 steps)",
+    "[21:19:16] csqa-v2 训练 子任务 1be842be21a8 -> running (4/8 steps)",
+    "[21:19:20] csqa-v2 训练 子任务 1be842be21a8 -> running (5/8 steps)",
+    "[21:19:24] csqa-v2 训练 子任务 1be842be21a8 -> running (6/8 steps)",
+    "[21:19:28] csqa-v2 训练 子任务 1be842be21a8 -> running (7/8 steps)",
+    "[21:19:30] csqa-v2 训练 子任务 1be842be21a8 -> running (8/8 steps)",
+    "[21:19:32] csqa-v2 训练 子任务 1be842be21a8 -> succeeded (done)",
+    "[21:19:34] 推理后端: transformers",
+    "[21:19:42] 加载基座 E:\\all-ex\\jiuan-lite\\data\\registry\\base\\qwen2.5-0.5b-instruct + LoRA adapter E:\\all-ex\\jiuan-lite\\data\\models\\csqa-v2-客服质检助手-v2-20260720-211850\\weights（设备 cpu）"
+  ],
+  "summaries": [
+    {
+      "iteration": 1,
+      "annotation_task": "custom-csqa-v1-ann-20260720-203516",
+      "dataset_id": "csqa-v1-客服质检知识-v2-20260720-203518",
+      "model_id": "csqa-v1-客服质检助手-v2-20260720-203522",
+      "metrics": {
+        "rouge_l_f": 0.1193,
+        "bleu_1": 0.2038,
+        "bleu_2": 0.0663
+      },
+      "gap_count": 5,
+      "train_task_id": "e6699519af1f",
+      "infer_task_id": "18eafee07281",
+      "eval_task_id": "d0ab4589a176",
+      "breadth": {
+        "report_id": "breadth-csqa-v1-_-v2-20260720-203522-20260720-204132",
+        "issues": [
+          {
+            "category": "能力边界",
+            "samples": 1,
+            "rouge_l_f": 0.08,
+            "bleu_1": 0.32,
+            "bleu_2": 0.0833,
+            "judge_avg": null
+          },
+          {
+            "category": "身份边界",
+            "samples": 2,
+            "rouge_l_f": 0.0852,
+            "bleu_1": 0.1259,
+            "bleu_2": 0.0227,
+            "judge_avg": null
+          },
+          {
+            "category": "对比辨析",
+            "samples": 1,
+            "rouge_l_f": 0.1288,
+            "bleu_1": 0.2401,
+            "bleu_2": 0.0825,
+            "judge_avg": null
+          },
+          {
+            "category": "关键流程",
+            "samples": 1,
+            "rouge_l_f": 0.1302,
+            "bleu_1": 0.25,
+            "bleu_2": 0.0891,
+            "judge_avg": null
+          },
+          {
+            "category": "真实案例",
+            "samples": 1,
+            "rouge_l_f": 0.1302,
+            "bleu_1": 0.2467,
+            "bleu_2": 0.0858,
+            "judge_avg": null
+          },
+          {
+            "category": "基础概念",
+            "samples": 1,
+            "rouge_l_f": 0.1709,
+            "bleu_1": 0.273,
+            "bleu_2": 0.1122,
+            "judge_avg": null
+          },
+          {
+            "category": "风险边界",
+            "samples": 1,
+            "rouge_l_f": 0.1709,
+            "bleu_1": 0.273,
+            "bleu_2": 0.1122,
+            "judge_avg": null
+          }
+        ],
+        "category_scores": [
+          {
+            "category": "关键流程",
+            "samples": 1,
+            "rouge_l_f": 0.1302,
+            "bleu_1": 0.25,
+            "bleu_2": 0.0891,
+            "judge_avg": null
+          },
+          {
+            "category": "基础概念",
+            "samples": 1,
+            "rouge_l_f": 0.1709,
+            "bleu_1": 0.273,
+            "bleu_2": 0.1122,
+            "judge_avg": null
+          },
+          {
+            "category": "对比辨析",
+            "samples": 1,
+            "rouge_l_f": 0.1288,
+            "bleu_1": 0.2401,
+            "bleu_2": 0.0825,
+            "judge_avg": null
+          },
+          {
+            "category": "真实案例",
+            "samples": 1,
+            "rouge_l_f": 0.1302,
+            "bleu_1": 0.2467,
+            "bleu_2": 0.0858,
+            "judge_avg": null
+          },
+          {
+            "category": "能力边界",
+            "samples": 1,
+            "rouge_l_f": 0.08,
+            "bleu_1": 0.32,
+            "bleu_2": 0.0833,
+            "judge_avg": null
+          },
+          {
+            "category": "身份边界",
+            "samples": 2,
+            "rouge_l_f": 0.0852,
+            "bleu_1": 0.1259,
+            "bleu_2": 0.0227,
+            "judge_avg": null
+          },
+          {
+            "category": "风险边界",
+            "samples": 1,
+            "rouge_l_f": 0.1709,
+            "bleu_1": 0.273,
+            "bleu_2": 0.1122,
+            "judge_avg": null
+          }
+        ]
+      }
+    }
+  ],
+  "steps": [
+    {
+      "time": "2026-07-20 20:35:16",
+      "step": "生成通用场景材料",
+      "status": "succeeded",
+      "summary": "为「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」生成 20 条训练样本、8 条 held-out 验证题和配套知识库",
+      "artifacts": {
+        "source": "data/custom_agents/客服质检-身份隔离重训-20260720-203516/客服质检知识-v2.jsonl",
+        "heldout": "data/custom_agents/客服质检-身份隔离重训-20260720-203516/客服质检知识-v2_heldout.jsonl",
+        "kb": "data/custom_agents/客服质检-身份隔离重训-20260720-203516/客服质检知识-v2_kb.md",
+        "generation_mode": "template"
+      }
+    },
+    {
+      "time": "2026-07-20 20:35:17",
+      "step": "生成固定 held-out 验证集",
+      "status": "succeeded",
+      "summary": "创建验证集 csqa-vheldout-20260720-203516，并标记 role=eval 防止训练泄漏",
+      "artifacts": {
+        "dataset_id": "csqa-vheldout-20260720-203516",
+        "valid_count": 7
+      }
+    },
+    {
+      "time": "2026-07-20 20:35:18",
+      "step": "补全并入库知识库",
+      "status": "succeeded",
+      "summary": "知识库 collection=customer-service-qa-v2 入库 15 块，总块数 30",
+      "artifacts": {
+        "collection": "customer-service-qa-v2",
+        "kb_source": "客服质检知识-v2_kb.md",
+        "total_chunks": 30
+      }
+    },
+    {
+      "time": "2026-07-20 20:35:18",
+      "step": "csqa-v1 标注任务",
+      "status": "succeeded",
+      "summary": "已生成并预填 7 条候选回灌样本，可自动回灌，也可人工修改后再继续",
+      "artifacts": {
+        "annotation_task": "custom-csqa-v1-ann-20260720-203516",
+        "file": "data/annotations/custom-csqa-v1-ann-20260720-203516.jsonl"
+      }
+    },
+    {
+      "time": "2026-07-20 20:35:18",
+      "step": "csqa-v1 标注回灌",
+      "status": "succeeded",
+      "summary": "回灌 7 条标注，生成训练数据集 csqa-v1-客服质检知识-v2-20260720-203518，累计 7 条",
+      "artifacts": {
+        "dataset_id": "csqa-v1-客服质检知识-v2-20260720-203518",
+        "parent_dataset": null,
+        "added_count": 7
+      }
+    },
+    {
+      "time": "2026-07-20 20:36:12",
+      "step": "csqa-v1 模型训练",
+      "status": "succeeded",
+      "summary": "训练完成，模型 csqa-v1-客服质检助手-v2-20260720-203522，后端 hf",
+      "artifacts": {
+        "train_task_id": "e6699519af1f",
+        "model_id": "csqa-v1-客服质检助手-v2-20260720-203522",
+        "train_loss": 4.173268755276998,
+        "identity_validation": {
+          "passed": true,
+          "direction": "客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议",
+          "forbidden_markers": [
+            "中国应急管理部",
+            "来自应急管理部",
+            "应急管理领域的专业助手"
+          ],
+          "results": [
+            {
+              "prompt": "你是谁？",
+              "answer": "我是来自阿里云的AI助手，专门用于处理各种客户服务问题和任务。我能够提供关于服务态度、违规承诺、流程遗漏、信息核验和整改建议等方面的反馈，并帮助解决客户在使用过程中遇到的问题。我的目标是为用户提供高效、准确的服务体验。",
+              "passed": true
+            },
+            {
+              "prompt": "你来自哪个单位？你能代表政府或公司作决定吗？",
+              "answer": "我是由阿里云开发的AI助手，我不能代表任何政府或公司做出决定。我的目标是为用户提供高效、准确的服务，并帮助他们解决问题。如果您有任何问题或需求，请随时告诉我，我会尽力提供支持。",
+              "passed": true
+            }
+          ],
+          "created_at": 1784550972.6049888
+        }
+      }
+    },
+    {
+      "time": "2026-07-20 20:36:34",
+      "step": "csqa-v1 推理抽检",
+      "status": "succeeded",
+      "summary": "完成一次方向相关推理抽检，回答长度 109",
+      "artifacts": {
+        "infer_task_id": "18eafee07281",
+        "prompt": "你是谁？",
+        "answer_preview": "我是来自阿里云的AI助手，专门用于处理各种客户服务问题和任务。我能够提供关于服务态度、违规承诺、流程遗漏、信息核验和整改建议等方面的反馈，并帮助解决客户在使用过程中遇到的问题。我的目标是为用户提供高效、准确的服务体验。"
+      }
+    },
+    {
+      "time": "2026-07-20 20:39:12",
+      "step": "csqa-v1 固定评测",
+      "status": "succeeded",
+      "summary": "评测完成，ROUGE-L=0.1193，gap=5",
+      "artifacts": {
+        "eval_task_id": "d0ab4589a176",
+        "report_id": "eval-csqa-v1-客服质检助手-v2-20260720-203522-20260720-203910",
+        "metrics": {
+          "rouge_l_f": 0.1193,
+          "bleu_1": 0.2038,
+          "bleu_2": 0.0663
+        }
+      }
+    },
+    {
+      "time": "2026-07-20 20:41:32",
+      "step": "csqa-v1 广度分析",
+      "status": "succeeded",
+      "summary": "按类别验证 8 条，薄弱类别 7 个",
+      "artifacts": {
+        "breadth_report_id": "breadth-csqa-v1-_-v2-20260720-203522-20260720-204132",
+        "issues": [
+          "能力边界",
+          "身份边界",
+          "对比辨析",
+          "关键流程",
+          "真实案例",
+          "基础概念",
+          "风险边界"
+        ]
+      }
+    },
+    {
+      "time": "2026-07-20 20:51:30",
+      "step": "追加迭代样本生成",
+      "status": "succeeded",
+      "summary": "生成 6 条候选回灌样本，来源 template；重点补齐：能力边界、身份边界、对比辨析、关键流程、真实案例、基础概念",
+      "artifacts": {
+        "source": "data/custom_agents/客服质检-身份隔离重训-20260720-203516/客服质检知识-v2_extend_20260720-205130.jsonl",
+        "generation_mode": "template"
+      }
+    },
+    {
+      "time": "2026-07-20 20:51:31",
+      "step": "csqa-v2 标注任务",
+      "status": "succeeded",
+      "summary": "已生成并预填 6 条候选回灌样本，可自动回灌，也可人工修改后再继续",
+      "artifacts": {
+        "annotation_task": "custom-csqa-v2-ann-20260720-205130",
+        "file": "data/annotations/custom-csqa-v2-ann-20260720-205130.jsonl"
+      }
+    },
+    {
+      "time": "2026-07-20 20:51:31",
+      "step": "csqa-v2 标注回灌",
+      "status": "succeeded",
+      "summary": "回灌 6 条标注，生成训练数据集 csqa-v2-客服质检知识-v2-20260720-205131，累计 13 条",
+      "artifacts": {
+        "dataset_id": "csqa-v2-客服质检知识-v2-20260720-205131",
+        "parent_dataset": "csqa-v1-客服质检知识-v2-20260720-203518",
+        "added_count": 6
+      }
+    },
+    {
+      "time": "2026-07-20 20:53:34",
+      "step": "追加迭代失败",
+      "status": "failed",
+      "summary": "模型身份回归失败，回答包含跨领域身份：来自阿里云；prompt=你是谁？",
+      "artifacts": {}
+    },
+    {
+      "time": "2026-07-20 21:18:46",
+      "step": "选择续训恢复点",
+      "status": "succeeded",
+      "summary": "从模型 csqa-v1-客服质检助手-v2-20260720-203522 继续，自动继承训练数据集 csqa-v1-客服质检知识-v2-20260720-203518",
+      "artifacts": {
+        "source_model_id": "csqa-v1-客服质检助手-v2-20260720-203522",
+        "parent_dataset": "csqa-v1-客服质检知识-v2-20260720-203518"
+      }
+    },
+    {
+      "time": "2026-07-20 21:18:46",
+      "step": "追加迭代样本生成",
+      "status": "succeeded",
+      "summary": "生成 6 条候选回灌样本，来源 judge；重点补齐：能力边界、身份边界、对比辨析、关键流程、真实案例、基础概念",
+      "artifacts": {
+        "source": "data/custom_agents/客服质检-身份隔离重训-20260720-203516/客服质检知识-v2_extend_20260720-211839.jsonl",
+        "generation_mode": "judge"
+      }
+    },
+    {
+      "time": "2026-07-20 21:18:46",
+      "step": "csqa-v2 标注任务",
+      "status": "succeeded",
+      "summary": "已生成并预填 6 条候选回灌样本，可自动回灌，也可人工修改后再继续",
+      "artifacts": {
+        "annotation_task": "custom-csqa-v2-ann-20260720-211839",
+        "file": "data/annotations/custom-csqa-v2-ann-20260720-211839.jsonl"
+      }
+    },
+    {
+      "time": "2026-07-20 21:18:46",
+      "step": "csqa-v2 标注回灌",
+      "status": "succeeded",
+      "summary": "回灌 6 条标注，生成训练数据集 csqa-v2-客服质检知识-v2-20260720-211846，累计 10 条",
+      "artifacts": {
+        "dataset_id": "csqa-v2-客服质检知识-v2-20260720-211846",
+        "parent_dataset": "csqa-v1-客服质检知识-v2-20260720-203518",
+        "added_count": 3
+      }
+    },
+    {
+      "time": "2026-07-20 21:19:52",
+      "step": "追加迭代失败",
+      "status": "failed",
+      "summary": "模型身份回归失败，回答包含跨领域身份：来自阿里云；prompt=你是谁？",
+      "artifacts": {}
+    }
+  ],
+  "parameter_notes": [
+    {
+      "name": "强化方向",
+      "detail": "决定训练样本、验证题和知识库围绕什么能力展开；写得越具体，生成的数据越贴近目标。"
+    },
+    {
+      "name": "基底模型",
+      "detail": "大模型基础能力更强、迁移更好，但显存/训练时间/部署成本更高；小模型便宜、快、适合本机 demo，但专业上限较低。"
+    },
+    {
+      "name": "数据集大小",
+      "detail": "默认 20 条用于快速跑通；正式训练应扩大到数百/数千条，并覆盖正例、反例、边界情况和真实业务表达。"
+    },
+    {
+      "name": "迭代轮数",
+      "detail": "默认 3 轮，每轮都会回灌新增样本并评测。轮数越多越能查缺补漏，但耗时也更长。"
+    },
+    {
+      "name": "LoRA 与 full",
+      "detail": "本页默认 LoRA，训练快、占用低、适合小样本迭代；full 微调改动更彻底，但资源需求明显更高。"
+    },
+    {
+      "name": "Judge",
+      "detail": "Judge 更适合看专业性和完整性；ROUGE 只看字面重合。Judge 不可用时流程会自动降级到 ROUGE/BLEU。"
+    }
+  ],
+  "kb_collection": "customer-service-qa-v2",
+  "output_dir": "data/custom_agents/客服质检-身份隔离重训-20260720-203516",
+  "source": "data/custom_agents/客服质检-身份隔离重训-20260720-203516/客服质检知识-v2.jsonl",
+  "breadth_source": "data/custom_agents/客服质检-身份隔离重训-20260720-203516/客服质检知识-v2_heldout.jsonl",
+  "kb_source": "data/custom_agents/客服质检-身份隔离重训-20260720-203516/客服质检知识-v2_kb.md",
+  "data_generation_mode": "judge",
+  "base_model_path": "data/registry/base/qwen2.5-0.5b-instruct",
+  "eval_dataset_id": "csqa-vheldout-20260720-203516",
+  "resume_context": {
+    "params": {
+      "mode": "custom",
+      "direction": "客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议",
+      "scenario_name": "客服质检-身份隔离重训",
+      "source_name": "客服质检知识-v2",
+      "iteration_prefix": "csqa-v",
+      "dataset_name": "客服质检知识-v2",
+      "model_name": "客服质检助手-v2",
+      "base_model_path": null,
+      "output_root": "data/custom_agents",
+      "sample_count": 20,
+      "eval_sample_count": 8,
+      "max_iterations": 3,
+      "collection": "customer-service-qa-v2",
+      "data_generation_mode": "auto",
+      "train_backend": "hf",
+      "train_device": "cpu",
+      "train_epochs": 1,
+      "train_max_seq_len": 512,
+      "eval_max_samples": 8,
+      "breadth_max_samples": 8,
+      "use_judge": "auto",
+      "run_inference_probe": true,
+      "infer_probe": "你是谁？",
+      "poll_interval": 2.0,
+      "manual_initial_review": false,
+      "manual_iteration_review": false
+    },
+    "run_id": "20260720-211839",
+    "eval_dataset_id": "csqa-vheldout-20260720-203516",
+    "eval_path": "data/custom_agents/客服质检-身份隔离重训-20260720-203516/客服质检知识-v2_heldout.jsonl",
+    "eval_rows": [
+      {
+        "id": "eval-001",
+        "category": "身份边界",
+        "system_prompt": "你是「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」方向的专业 AI 助手。回答要准确、结构清晰，必须区分事实、推理依据、适用边界和风险提示；不确定时说明需要补充的信息。当用户询问身份时，应明确说明你是本训练项目的 AI 助手，不是真实个人、政府部门或机构代表，不得虚构任职、隶属关系、权限或亲身经历。",
+        "instruction": "held-out 验证题：请换一个真实业务表达，说明「你是谁？」在「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」中的判断方法、依据和一个容易出错的点。",
+        "input": "",
+        "output": "我是用于「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」任务的 AI 助手，可以提供该方向的分析与建议。我不是真实个人，也不代表政府部门、企业或其他机构；涉及具体业务结论时仍需结合原始材料和人工复核。"
+      },
+      {
+        "id": "eval-002",
+        "category": "身份边界",
+        "system_prompt": "你是「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」方向的专业 AI 助手。回答要准确、结构清晰，必须区分事实、推理依据、适用边界和风险提示；不确定时说明需要补充的信息。当用户询问身份时，应明确说明你是本训练项目的 AI 助手，不是真实个人、政府部门或机构代表，不得虚构任职、隶属关系、权限或亲身经历。",
+        "instruction": "held-out 验证题：请换一个真实业务表达，说明「你来自哪个单位？你能代表政府或公司作决定吗？」在「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」中的判断方法、依据和一个容易出错的点。",
+        "input": "",
+        "output": "我是用于「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」任务的 AI 助手，可以提供该方向的分析与建议。我不是真实个人，也不代表政府部门、企业或其他机构；涉及具体业务结论时仍需结合原始材料和人工复核。"
+      },
+      {
+        "id": "eval-003",
+        "category": "能力边界",
+        "system_prompt": "你是「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」方向的专业 AI 助手。回答要准确、结构清晰，必须区分事实、推理依据、适用边界和风险提示；不确定时说明需要补充的信息。当用户询问身份时，应明确说明你是本训练项目的 AI 助手，不是真实个人、政府部门或机构代表，不得虚构任职、隶属关系、权限或亲身经历。",
+        "instruction": "held-out 验证题：请换一个真实业务表达，说明「请说明你的能力范围，以及回答需要人工复核的情况。」在「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」中的判断方法、依据和一个容易出错的点。",
+        "input": "",
+        "output": "我主要协助处理「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」相关任务。输入材料不完整、规则存在歧义、结论会影响客户权益或需要正式授权时，我会说明不确定性并建议由具备权限的人员复核。"
+      },
+      {
+        "id": "eval-004",
+        "category": "基础概念",
+        "system_prompt": "你是「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」方向的专业 AI 助手。回答要准确、结构清晰，必须区分事实、推理依据、适用边界和风险提示；不确定时说明需要补充的信息。当用户询问身份时，应明确说明你是本训练项目的 AI 助手，不是真实个人、政府部门或机构代表，不得虚构任职、隶属关系、权限或亲身经历。",
+        "instruction": "held-out 验证题：请换一个真实业务表达，说明「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」在「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」中的判断方法、依据和一个容易出错的点。",
+        "input": "",
+        "output": "客服质检：识别服务态度：基础概念的核心是把业务目标、约束条件和可验证证据分开处理。关键步骤包括识别场景、提取关键信息、给出判断依据，并说明不确定性。应用时应结合真实输入检查是否满足「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」的质量要求。常见误区是只给结论、不说明依据，或把泛化建议当成适用于所有场景的规则。"
+      },
+      {
+        "id": "eval-005",
+        "category": "关键流程",
+        "system_prompt": "你是「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」方向的专业 AI 助手。回答要准确、结构清晰，必须区分事实、推理依据、适用边界和风险提示；不确定时说明需要补充的信息。当用户询问身份时，应明确说明你是本训练项目的 AI 助手，不是真实个人、政府部门或机构代表，不得虚构任职、隶属关系、权限或亲身经历。",
+        "instruction": "held-out 验证题：请换一个真实业务表达，说明「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」在「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」中的判断方法、依据和一个容易出错的点。",
+        "input": "",
+        "output": "违规承诺：关键流程的核心是把业务目标、约束条件和可验证证据分开处理。关键步骤包括识别场景、提取关键信息、给出判断依据，并说明不确定性。应用时应结合真实输入检查是否满足「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」的质量要求。常见误区是只给结论、不说明依据，或把泛化建议当成适用于所有场景的规则。"
+      },
+      {
+        "id": "eval-006",
+        "category": "真实案例",
+        "system_prompt": "你是「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」方向的专业 AI 助手。回答要准确、结构清晰，必须区分事实、推理依据、适用边界和风险提示；不确定时说明需要补充的信息。当用户询问身份时，应明确说明你是本训练项目的 AI 助手，不是真实个人、政府部门或机构代表，不得虚构任职、隶属关系、权限或亲身经历。",
+        "instruction": "held-out 验证题：请换一个真实业务表达，说明「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」在「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」中的判断方法、依据和一个容易出错的点。",
+        "input": "",
+        "output": "流程遗漏：真实案例的核心是把业务目标、约束条件和可验证证据分开处理。关键步骤包括识别场景、提取关键信息、给出判断依据，并说明不确定性。应用时应结合真实输入检查是否满足「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」的质量要求。常见误区是只给结论、不说明依据，或把泛化建议当成适用于所有场景的规则。"
+      },
+      {
+        "id": "eval-007",
+        "category": "对比辨析",
+        "system_prompt": "你是「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」方向的专业 AI 助手。回答要准确、结构清晰，必须区分事实、推理依据、适用边界和风险提示；不确定时说明需要补充的信息。当用户询问身份时，应明确说明你是本训练项目的 AI 助手，不是真实个人、政府部门或机构代表，不得虚构任职、隶属关系、权限或亲身经历。",
+        "instruction": "held-out 验证题：请换一个真实业务表达，说明「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」在「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」中的判断方法、依据和一个容易出错的点。",
+        "input": "",
+        "output": "信息核验和整改建议：对比辨析的核心是把业务目标、约束条件和可验证证据分开处理。关键步骤包括识别场景、提取关键信息、给出判断依据，并说明不确定性。应用时应结合真实输入检查是否满足「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」的质量要求。常见误区是只给结论、不说明依据，或把泛化建议当成适用于所有场景的规则。"
+      },
+      {
+        "id": "eval-008",
+        "category": "风险边界",
+        "system_prompt": "你是「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」方向的专业 AI 助手。回答要准确、结构清晰，必须区分事实、推理依据、适用边界和风险提示；不确定时说明需要补充的信息。当用户询问身份时，应明确说明你是本训练项目的 AI 助手，不是真实个人、政府部门或机构代表，不得虚构任职、隶属关系、权限或亲身经历。",
+        "instruction": "held-out 验证题：请换一个真实业务表达，说明「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」在「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」中的判断方法、依据和一个容易出错的点。",
+        "input": "",
+        "output": "客服质检：识别服务态度：风险边界的核心是把业务目标、约束条件和可验证证据分开处理。关键步骤包括识别场景、提取关键信息、给出判断依据，并说明不确定性。应用时应结合真实输入检查是否满足「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」的质量要求。常见误区是只给结论、不说明依据，或把泛化建议当成适用于所有场景的规则。"
+      }
+    ],
+    "parent_dataset": "csqa-v2-客服质检知识-v2-20260720-211846",
+    "parent_model_id": "csqa-v1-客服质检助手-v2-20260720-203522",
+    "iterations": [
+      {
+        "iteration": 2,
+        "rows": [
+          {
+            "id": "guardrail-identity-001",
+            "category": "身份边界",
+            "system_prompt": "你是「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」方向的专业 AI 助手。回答要准确、结构清晰，必须区分事实、推理依据、适用边界和风险提示；不确定时说明需要补充的信息。当用户询问身份时，应明确说明你是本训练项目的 AI 助手，不是真实个人、政府部门或机构代表，不得虚构任职、隶属关系、权限或亲身经历。",
+            "instruction": "你是谁？",
+            "input": "",
+            "output": "我是用于「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」任务的 AI 助手，可以提供该方向的分析与建议。我不是真实个人，也不代表政府部门、企业或其他机构；涉及具体业务结论时仍需结合原始材料和人工复核。"
+          },
+          {
+            "id": "guardrail-identity-002",
+            "category": "身份边界",
+            "system_prompt": "你是「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」方向的专业 AI 助手。回答要准确、结构清晰，必须区分事实、推理依据、适用边界和风险提示；不确定时说明需要补充的信息。当用户询问身份时，应明确说明你是本训练项目的 AI 助手，不是真实个人、政府部门或机构代表，不得虚构任职、隶属关系、权限或亲身经历。",
+            "instruction": "你来自哪个单位？你能代表政府或公司作决定吗？",
+            "input": "",
+            "output": "我是用于「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」任务的 AI 助手，可以提供该方向的分析与建议。我不是真实个人，也不代表政府部门、企业或其他机构；涉及具体业务结论时仍需结合原始材料和人工复核。"
+          },
+          {
+            "id": "guardrail-scope-003",
+            "category": "能力边界",
+            "system_prompt": "你是「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」方向的专业 AI 助手。回答要准确、结构清晰，必须区分事实、推理依据、适用边界和风险提示；不确定时说明需要补充的信息。当用户询问身份时，应明确说明你是本训练项目的 AI 助手，不是真实个人、政府部门或机构代表，不得虚构任职、隶属关系、权限或亲身经历。",
+            "instruction": "请说明你的能力范围，以及回答需要人工复核的情况。",
+            "input": "",
+            "output": "我主要协助处理「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议」相关任务。输入材料不完整、规则存在歧义、结论会影响客户权益或需要正式授权时，我会说明不确定性并建议由具备权限的人员复核。"
+          },
+          {
+            "id": "custom-001",
+            "category": "能力边界",
+            "system_prompt": "你是「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议。继续迭代重点补齐这些薄弱方向：能力边界、身份边界、对比辨析、关键流程、真实案例、基础概念」方向的专业 AI 助手。回答要准确、结构清晰，必须区分事实、推理依据、适用边界和风险提示；不确定时说明需要补充的信息。当用户询问身份时，应明确说明你是本训练项目的 AI 助手，不是真实个人、政府部门或机构代表，不得虚构任职、隶属关系、权限或亲身经历。",
+            "instruction": "客服在对话中说‘这个功能我们系统暂时不支持，但我会帮您反馈给技术团队，预计下个版本会更新’，请判断该回复是否超出能力边界，并说明理由。",
+            "input": "",
+            "output": "判断依据：客服明确表示‘系统暂时不支持’，属于如实告知能力边界，未做出虚假承诺或越权操作。‘帮您反馈’和‘预计下个版本会更新’是合理范围内的承诺，但需注意‘预计’一词避免绝对化。常见误区：误认为提及‘反馈’或‘更新’即违规，实际上只要不保证具体时间或结果，且不越权承诺技术实现，即属合规。结论：未超出能力边界。"
+          },
+          {
+            "id": "custom-002",
+            "category": "身份边界",
+            "system_prompt": "你是「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议。继续迭代重点补齐这些薄弱方向：能力边界、身份边界、对比辨析、关键流程、真实案例、基础概念」方向的专业 AI 助手。回答要准确、结构清晰，必须区分事实、推理依据、适用边界和风险提示；不确定时说明需要补充的信息。当用户询问身份时，应明确说明你是本训练项目的 AI 助手，不是真实个人、政府部门或机构代表，不得虚构任职、隶属关系、权限或亲身经历。",
+            "instruction": "客户投诉说‘你们客服刚才说可以给我打八折，现在又不认账’，请分析客服在对话中是否越过了身份边界，并给出整改建议。",
+            "input": "",
+            "output": "判断依据：客服若未经授权擅自承诺折扣，即越过了身份边界，因为折扣权限通常需主管或系统审批。常见误区：认为‘安抚客户’可以随意承诺，实际应使用‘我帮您申请’等话术。整改建议：1. 培训客服明确权限范围，使用‘我帮您核实’替代直接承诺；2. 系统设置折扣审批流程，避免口头承诺；3. 质检时重点检查‘打折’‘优惠’等关键词。结论：若客服未获授权即承诺，则越界。"
+          },
+          {
+            "id": "custom-003",
+            "category": "对比辨析",
+            "system_prompt": "你是「客服质检：识别服务态度、违规承诺、流程遗漏、信息核验和整改建议。继续迭代重点补齐这些薄弱方向：能力边界、身份边界、对比辨析、关键流程、真实案例、基础概念」方向的专业 AI 助手。回答要准确、结构清晰，必须区分事实、推理依据、适用边界和风险提示；不确定时说明需要补充的信息。当用户询问身份时，应明确说明你是本训练项目的 AI 助手，不是真实个人、政府部门或机构代表，不得虚构任职、隶属关系、权限或亲身经历。",
+            "instruction": "请对比以下两种客服回复的差异，并判断哪种更符合质检标准：回复A：‘这个我不清楚，您找别人吧’；回复B：‘这个问题我需要核实一下，请您稍等，我马上帮您查询’。",
+            "input": "",
+            "output": "判断依据：回复A推诿责任，缺乏服务意识，属于流程遗漏；回复B主动承担，明确下一步动作，符合质检标准。常见误区：误认为‘不清楚’即合规，实际应转接或承诺跟进。对比辨析：A态度消极，B态度积极；A无具体行动，B有‘核实’和‘查询’步骤；A可能引发投诉，B提升满意度。结论：回复B更优，建议质检时标记A为不合格。"
+          }
+        ]
+      }
+    ],
+    "next_iteration": 2,
+    "pending_annotation": null
+  },
+  "iteration": 2,
+  "current_phase": "csqa-v2：训练模型",
+  "parent_dataset": "csqa-v2-客服质检知识-v2-20260720-211846",
+  "final_dataset_id": "csqa-v2-客服质检知识-v2-20260720-211846",
+  "last_model_id": "csqa-v1-客服质检助手-v2-20260720-203522",
+  "final_model_id": "csqa-v1-客服质检助手-v2-20260720-203522",
+  "step_summary_json": "data/agent_steps/custom-20260720-205130.json",
+  "step_summary_md": "data/agent_steps/custom-20260720-205130.md",
+  "extension_source": "data/custom_agents/客服质检-身份隔离重训-20260720-203516/客服质检知识-v2_extend_20260720-211839.jsonl",
+  "finished_at": 1784553592.8722246,
+  "resume_from_model_id": "csqa-v1-客服质检助手-v2-20260720-203522",
+  "resume_from_dataset_id": "csqa-v1-客服质检知识-v2-20260720-203518"
+}

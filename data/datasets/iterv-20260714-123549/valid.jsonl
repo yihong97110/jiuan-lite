@@ -1,0 +1,4 @@
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "独居老人如何做好应急准备？"}, {"role": "assistant", "content": "在显眼处留急救联系卡和常用药清单，安装报警和呼叫设备，与邻里社区保持联系，熟悉紧急撤离路线。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "地震时在室外应怎么办？"}, {"role": "assistant", "content": "迅速远离建筑物、电线杆、广告牌和高大树木，跑到空旷地带蹲下，护住头部，避开桥梁和陡坡。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "触电事故现场急救的第一步是什么？"}, {"role": "assistant", "content": "第一步是尽快安全切断电源或用绝缘物使触电者脱离电源，切勿直接徒手接触，随后判断伤情并施救。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "如何正确报火警？"}, {"role": "assistant", "content": "拨打119，讲清起火地点、燃烧物质、火势大小和有无人员被困，留下联系电话，并派人到路口引导消防车。"}]}

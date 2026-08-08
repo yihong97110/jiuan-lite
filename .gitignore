@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 项目大文件 - 模型权重不提交
+data/registry/base/
+data/models/
+data/vector_db/
+
+# 数据库文件
+data/jiuan.db
+data/jiuan.db-wal
+data/jiuan.db-shm
+
+# 密钥和配置（含API Key的配置不提交）
+.env
+configs/local.yaml
+
+# 日志
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
+
+# 上传文件
+uploads/
+
+# 临时文件和PID
+*.pid
+*.out
+.local_pid
+.server_pid
+.tunnel_pid

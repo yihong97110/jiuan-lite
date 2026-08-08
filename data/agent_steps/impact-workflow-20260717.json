@@ -1,0 +1,96 @@
+{
+  "workflow_id": "impact-workflow-20260717",
+  "title": "回灌效果验证与查缺补漏",
+  "status": "implemented_and_smoke_verified",
+  "purpose": "验证每次标注回灌是否在同主题不同问法上产生迁移改善，并把未改善项自动转成下一轮补漏标注任务。",
+  "ui_entry": "http://127.0.0.1:8000/?v=impact2 -> ⑦ 标注 -> 回灌效果验证 · 查缺补漏",
+  "api": {
+    "run": "POST /analysis/impact/run",
+    "reports": "GET /analysis/impact/reports"
+  },
+  "implemented_files": [
+    "jiuan/pipeline/impact.py",
+    "jiuan/app.py",
+    "jiuan/schemas.py",
+    "jiuan/pipeline/evaluate.py",
+    "jiuan/registry.py",
+    "web/index.html"
+  ],
+  "steps": [
+    {
+      "name": "选择回灌记录",
+      "detail": "读取 data/annotations/resolved_log.jsonl；dataset_id 为空时选择最新回灌记录。"
+    },
+    {
+      "name": "读取回灌 source",
+      "detail": "根据 task_id 读取 data/annotations/<task_id>-committed.jsonl，去重后作为 impact 变体题来源。"
+    },
+    {
+      "name": "生成 impact held-out",
+      "detail": "不使用训练原题，生成同主题不同问法，写入 data/impact_eval/impact-*.jsonl，并注册 role=eval、eval_type=impact 的数据集。"
+    },
+    {
+      "name": "前后模型评测",
+      "detail": "自动寻找 parent_dataset 对应模型作为 before，dataset_id 对应模型作为 after；对同一 impact 验证集分别评测。"
+    },
+    {
+      "name": "生成对比报告",
+      "detail": "读取评测 details，按 prompt 组装 before/after prediction、judge_delta、rouge_delta、improved、weak_after。"
+    },
+    {
+      "name": "自动补漏",
+      "detail": "weak_after=true 的项目生成 data/annotations/impact-gap-*.jsonl，供下一轮 commit/train/eval。"
+    }
+  ],
+  "known_issues_and_fixes": [
+    {
+      "issue": "impact 评测 summary 没有逐题 pairs",
+      "cause": "evaluate.run() 只返回 summary，details 在 report JSON 里。",
+      "fix": "impact.py 增加 _with_report_details(summary)，从 report_path 读取 details。"
+    },
+    {
+      "issue": "impact 临时评测污染主迭代指标",
+      "cause": "评测默认 attach_eval 到模型 registry。",
+      "fix": "evaluate.run() 支持 attach_eval=False；impact 调用时关闭；registry.iterations() 过滤 impact eval report。"
+    },
+    {
+      "issue": "固定评测追踪中回灌样本显示未纳入固定评测集",
+      "cause": "防泄漏机制正常工作，训练样本不能原样进入 held-out。",
+      "fix": "新增 impact held-out 变体题专门验证回灌效果。"
+    },
+    {
+      "issue": "PowerShell 中文输出乱码",
+      "cause": "控制台 code page 与 UTF-8 不一致。",
+      "fix": "文件仍按 UTF-8 保存；请求使用 application/json; charset=utf-8；浏览器作为中文显示准据。"
+    }
+  ],
+  "smoke_verified_example": {
+    "dataset_id": "bio-v3-生物学知识-20260716-165449",
+    "before_model_id": "bio-v2-生物专家-20260716-164601",
+    "after_model_id": "bio-v3-生物专家-20260716-165453",
+    "report": "data/reports/impact-bio-v3-生物学知识-20260716-165449-20260717-072242.json",
+    "samples": 2,
+    "use_judge": "false",
+    "before_rouge_l_f": 0.2177,
+    "after_rouge_l_f": 0.3946,
+    "rouge_delta": 0.1769,
+    "improved_count": 2,
+    "weak_count": 0
+  },
+  "next_reproduction": {
+    "recommended_request": {
+      "dataset_id": "bio-v3-生物学知识-20260716-165449",
+      "max_items": 36,
+      "variants_per_prompt": 1,
+      "use_judge": "auto",
+      "create_patch_task": true,
+      "patch_task_name": "impact-gap"
+    },
+    "acceptance": [
+      "生成 data/reports/impact-*.json",
+      "pairs 非空",
+      "GET /iterations 主指标不被 impact eval 覆盖",
+      "weak_count > 0 时生成 impact-gap-* 补漏任务"
+    ]
+  }
+}

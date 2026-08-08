@@ -1,0 +1,9 @@
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "燃气泄漏引发火灾能否直接关阀？"}, {"role": "assistant", "content": "应在确保自身安全的前提下先切断气源，若火势已大或阀门处起火应立即撤离并报警，由专业人员处置，不可盲目操作。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "突遇山洪如何逃生？"}, {"role": "assistant", "content": "迅速向两侧高处转移，不要沿河谷或沟道方向奔跑；已被困时抓牢固定物等待救援，切勿贸然涉水。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "实验室发生化学品灼伤如何处理？"}, {"role": "assistant", "content": "立即用大量流动清水冲洗至少15分钟，脱去污染衣物，强酸强碱灼伤持续冲洗后就医，切勿盲目中和。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "城市内涝时如何保障安全？"}, {"role": "assistant", "content": "远离低洼路段、下穿隧道和地下空间，注意脚下缺失的井盖，切勿在积水中行走靠近带电设施。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "洪水来临前应做哪些准备？"}, {"role": "assistant", "content": "关注预警信息，备好饮用水、食物、照明和急救用品，将贵重物品和电器移至高处，熟悉撤离路线和高地位置。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "加油站有哪些安全注意事项？"}, {"role": "assistant", "content": "进站熄火、禁止吸烟和使用明火；不要在加油区拨打电话；不用塑料桶盛装汽油；加油时不触摸车身放静电；发现漏油立即报告并远离。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "发生食物中毒后如何应对？"}, {"role": "assistant", "content": "立即停止食用可疑食物并保留样本，让患者多饮水，催吐后尽快就医，同时向疾控或卫生部门报告。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "洪水中被困车辆内怎么办？"}, {"role": "assistant", "content": "水位快速上涨时尽快弃车逃生，向高处转移；车门打不开时用安全锤或头枕金属杆击碎侧窗逃出。"}]}
+{"messages": [{"role": "system", "content": "你是应急管理领域的专业助手，回答需准确、简洁、可执行。"}, {"role": "user", "content": "寒潮冰冻天气如何防范？"}, {"role": "assistant", "content": "注意保暖防滑，谨慎驾车防止路面结冰打滑，防范水管冻裂和一氧化碳中毒，关注老人儿童和户外作业人员安全。"}]}

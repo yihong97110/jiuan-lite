@@ -1,0 +1,6 @@
+﻿# vLLM 推理服务依赖（仅 Linux + NVIDIA GPU / CUDA）
+# 在独立环境安装，避免与训练环境的 transformers/peft 版本冲突。
+#   python -m venv .venv-vllm && source .venv-vllm/bin/activate
+#   pip install -r requirements-vllm.txt
+# vLLM 会自带匹配的 torch(GPU 版)，无需再单独装 CPU torch。
+vllm>=0.6.0
