@@ -736,9 +736,7 @@ async function pollEval(taskId){
     const r = t.result||{};
     if(r.comparison){ renderComparison(r); }
     else{
-      const judgeText=judgeStatusText(r);
-      document.getElementById("ev-out").textContent =
-        `评测完成｜样本 ${r.samples}｜ROUGE-L ${r.metrics&&r.metrics.rouge_l_f}｜Judge ${judgeText}｜reliable=${r.reliable}｜gap ${r.gap_count!==undefined?r.gap_count:0}`;
+      document.getElementById("ev-out").innerHTML = renderEvalResult(r);
     }
     loadAllGaps();
     loadBreadthReports();
@@ -770,12 +768,98 @@ async function loadBreadthReports(){
   el.innerHTML=html;
 }
 
+function renderEvalResult(r){
+  const m=r.metrics||{};
+  const j=r.judge||{};
+  const d=r.delta||{};
+  const gaps=r.gaps||[];
+
+  function bar(label,val,max,color){
+    if(val===null||val===undefined||isNaN(val)) return "";
+    const pct=Math.round((val/max)*100);
+    return `<div style="display:flex;align-items:center;gap:8px;margin:4px 0">
+      <span style="width:80px;text-align:right;color:#94a3b8;font-size:13px">${label}</span>
+      <div style="flex:1;height:20px;background:#1e293b;border-radius:4px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${color};border-radius:4px"></div>
+      </div>
+      <span style="width:50px;font-weight:bold">${typeof val==="number"?val.toFixed(2):val}</span>
+    </div>`;
+  }
+
+  function deltaArrow(key){
+    const v=d[key];
+    if(v===undefined||v===null) return "";
+    const up=v>0, flat=Math.abs(v)<0.01;
+    const color=flat?"#94a3b8":(up?"#22c55e":"#ef4444");
+    const arrow=flat?"→":(up?"↑":"↓");
+    return `<span style="color:${color};font-size:12px;margin-left:4px">${arrow} ${Math.abs(v).toFixed(2)}</span>`;
+  }
+
+  let html=`<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px">`;
+
+  // 左列：基础指标
+  html+=`<div style="min-width:300px">
+    <div style="font-weight:bold;margin-bottom:6px;color:#60a5fa">基础指标</div>
+    ${bar("ROUGE-L",m.rouge_l_f,1,"#3b82f6")}${deltaArrow("rouge_l_f")}
+    ${bar("BLEU-1",m.bleu_1,1,"#3b82f6")}${deltaArrow("bleu_1")}
+    ${bar("BLEU-2",m.bleu_2,1,"#3b82f6")}${deltaArrow("bleu_2")}
+  </div>`;
+
+  // 右列：Judge 指标
+  if(r.judge_enabled && j.dim_scores){
+    const ds=j.dim_scores||{};
+    html+=`<div style="min-width:300px">
+      <div style="font-weight:bold;margin-bottom:6px;color:#a78bfa">LLM-as-Judge 四维度</div>
+      ${bar("准确性",ds.judge_accuracy,100,"#a78bfa")}${deltaArrow("judge_accuracy")}
+      ${bar("完整性",ds.judge_completeness,100,"#a78bfa")}${deltaArrow("judge_completeness")}
+      ${bar("相关性",ds.judge_relevance,100,"#a78bfa")}${deltaArrow("judge_relevance")}
+      ${bar("综合分",ds.judge_overall,100,"#a78bfa")}${deltaArrow("judge_overall")}
+    </div>`;
+  }
+
+  html+=`</div>`;
+
+  // Bad Case 率 + 幻觉率
+  if(j.bad_case_rate!==undefined){
+    const bcr=Math.round(j.bad_case_rate*100);
+    const bcColor=bcr<10?"#22c55e":(bcr<20?"#eab308":"#ef4444");
+    const hr=j.hallucination_rate!==undefined?Math.round(j.hallucination_rate*100):0;
+    html+=`<div style="display:flex;gap:24px;margin:8px 0;flex-wrap:wrap">
+      <div><span style="color:#94a3b8">Bad Case 率:</span>
+        <span style="color:${bcColor};font-weight:bold">${bcr}%</span>${deltaArrow("bad_case_rate")}</div>
+      <div><span style="color:#94a3b8">幻觉率:</span>
+        <span style="color:${hr>10?"#ef4444":"#22c55e"};font-weight:bold">${hr}%</span>${deltaArrow("hallucination_rate")}</div>
+      <div><span style="color:#94a3b8">样本数:</span> ${r.samples||0}</div>
+      <div><span style="color:#94a3b8">Gap数:</span> ${r.gap_count||0}</div>
+    </div>`;
+  } else {
+    html+=`<div style="color:#94a3b8;margin:8px 0">样本 ${r.samples||0}｜Gap ${r.gap_count||0}｜reliable=${r.reliable}</div>`;
+  }
+
+  // Gap 列表
+  if(gaps.length){
+    const typeColors={"幻觉":"#ef4444","知识缺失/事实错误":"#f97316","完整性不足":"#eab308","答非所问":"#a78bfa","综合薄弱":"#94a3b8","格式偏差/覆盖不足":"#64748b","知识缺失/质量薄弱":"#f97316"};
+    html+=`<div style="margin-top:8px"><div style="font-weight:bold;margin-bottom:4px;color:#f59e0b">Gap 分析（${gaps.length}个薄弱点）</div>`;
+    html+=`<table style="width:100%;font-size:13px"><thead><tr><th style="text-align:left;padding:2px 6px">类型</th><th style="text-align:left;padding:2px 6px">问题</th><th style="text-align:left;padding:2px 6px">建议</th></tr></thead><tbody>`;
+    for(const g of gaps.slice(0,10)){
+      const c=typeColors[g.gap_type]||"#94a3b8";
+      html+=`<tr><td style="padding:2px 6px"><span style="color:${c}">●</span> ${esc(g.gap_type||"")}</td>`;
+      html+=`<td style="padding:2px 6px;max-width:200px;overflow:hidden;text-overflow:ellipsis">${esc((g.prompt||"").slice(0,40))}</td>`;
+      html+=`<td style="padding:2px 6px;max-width:300px;overflow:hidden;text-overflow:ellipsis">${esc((g.suggestion||"").slice(0,60))}</td></tr>`;
+    }
+    html+=`</tbody></table></div>`;
+  }
+
+  return html;
+}
+
 function judgeStatusText(r){
   const status=r&&r.judge_status;
   if(status==="succeeded"){
-    const avg=r.metrics&&r.metrics.judge_avg!==undefined?r.metrics.judge_avg:null;
+    const m=r.metrics||{};
+    const avg=m.judge_overall!==undefined?m.judge_overall:(m.judge_avg!==undefined?m.judge_avg:null);
     const scored=r.judge_scored_samples!==undefined?r.judge_scored_samples:(r.judge&&r.judge.scored_samples);
-    return `已评分${avg!==null?"，均分 "+avg:""}${scored!==undefined?"（"+scored+" 条）":""}`;
+    return `已评分${avg!==null?"，均分 "+Math.round(avg):""}${scored!==undefined?"（"+scored+" 条）":""}`;
   }
   if(status==="failed") return `失败：${(r.judge_error||"未知错误").slice(0,80)}`;
   if(status==="unavailable") return "不可用（未执行）";

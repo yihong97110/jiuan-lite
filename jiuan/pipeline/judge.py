@@ -19,13 +19,16 @@ import time
 from typing import Callable, Optional
 
 JUDGE_SYSTEM = (
-    "你是客观、宽容且领域中立的答案评审专家。请依据问题和参考答案，从"
-    "事实正确性、相关性、完整性和可执行性四个维度综合评估待测回答的质量。"
-    "只输出 JSON，不要解释。格式：{\"score\": <0到5的整数>, \"reason\": \"<简短中文理由>\"}。"
-    "评分应以是否正确回答核心问题为主，不要求逐字覆盖参考答案，也不要因表达简略、措辞不同或"
-    "遗漏非关键扩展知识过度扣分；除非问题明确询问身份或权限，否则不要把身份声明作为评分条件。"
-    "评分标准：5=核心结论与关键机制准确，表达足以使用；4=基本正确，仅有非关键遗漏；"
-    "3=核心方向正确但有明显遗漏或轻微混淆；2=关键结论存在较大偏差；1=几乎不相关；0=错误或有害。"
+    "你是客观、宽容且领域中立的答案评审专家。请依据问题和参考答案，从以下四个维度独立打分（0-100整数）：\n"
+    "1. accuracy（事实准确性）：回答中的事实陈述是否正确无误。\n"
+    "2. completeness（完整性）：是否覆盖了问题的关键要点和必要细节。\n"
+    "3. relevance（相关性）：回答是否切题，没有跑题或冗余内容。\n"
+    "4. hallucination（幻觉检测）：0=无幻觉（所有断言可被参考答案支撑），1=存在幻觉（有无法证实的断言）。\n"
+    "并给出 overall（综合评分，0-100整数，加权平均）。\n"
+    "只输出 JSON，不要解释。格式：\n"
+    '{"accuracy": <0-100>, "completeness": <0-100>, "relevance": <0-100>, "hallucination": <0或1>, "overall": <0-100>, "reason": "<简短中文理由>"}\n'
+    "评分标准（以 overall 为例）：90+=优秀，70-89=良好，50-69=及格，30-49=较差，<30=极差。\n"
+    "不要求逐字覆盖参考答案；表达简略或措辞不同不应过度扣分；除非问题明确询问身份或权限，否则不要把身份声明作为评分条件。"
 )
 
 
@@ -127,14 +130,14 @@ def _post_chat(cfg: dict, payload: dict) -> str:
 
 
 def score_one(cfg: dict, prompt: str, reference: str, prediction: str, log: Callable) -> dict:
-    """调用裁判模型给单条打分，返回 {score:0-5, reason:str}。失败抛异常由上层处理。"""
+    """调用裁判模型给单条打分，返回四维度分数+幻觉标记+综合分。失败抛异常由上层处理。"""
     jc = _judge_cfg(cfg)
     model = jc.get("model", "judge")
     user = (
         f"【问题】\n{prompt}\n\n"
         f"【参考答案】\n{reference}\n\n"
         f"【待测回答】\n{prediction}\n\n"
-        "请打分并只输出 JSON。"
+        "请逐维度打分并只输出 JSON。"
     )
     payload = {
         "model": model,
@@ -147,17 +150,30 @@ def score_one(cfg: dict, prompt: str, reference: str, prediction: str, log: Call
     }
     content = _post_chat(cfg, payload)
     parsed = _extract_json(content) or {}
-    raw = parsed.get("score", 0)
-    try:
-        score = int(round(float(raw)))
-    except (TypeError, ValueError):
-        score = 0
-    score = max(0, min(5, score))
-    return {"score": score, "reason": str(parsed.get("reason", ""))[:200]}
+
+    def _clamp(v, lo=0, hi=100):
+        try:
+            return max(lo, min(hi, int(round(float(v)))))
+        except (TypeError, ValueError):
+            return 0
+
+    result = {
+        "accuracy": _clamp(parsed.get("accuracy")),
+        "completeness": _clamp(parsed.get("completeness")),
+        "relevance": _clamp(parsed.get("relevance")),
+        "hallucination": 1 if str(parsed.get("hallucination", "0")).strip() in ("1", "true", "True") else 0,
+        "overall": _clamp(parsed.get("overall")),
+        "reason": str(parsed.get("reason", ""))[:200],
+    }
+    return result
 
 
 def score_batch(cfg: dict, samples: list[dict], log: Callable) -> list[dict]:
-    """Score a whole evaluation batch in one request to avoid Ark plan rate limits."""
+    """Score a whole evaluation batch in one request to avoid Ark plan rate limits.
+
+    Returns a list of dicts, each containing:
+    accuracy, completeness, relevance, hallucination, overall, reason
+    """
     if not samples:
         return []
     jc = _judge_cfg(cfg)
@@ -178,27 +194,40 @@ def score_batch(cfg: dict, samples: list[dict], log: Callable) -> list[dict]:
                 "content": (
                     JUDGE_SYSTEM
                     + " 本次需要批量评分。只输出 JSON："
-                    + '{"results":[{"index":1,"score":0,"reason":"理由"}]}。'
+                    + '{"results":[{"index":1,"accuracy":0,"completeness":0,"relevance":0,"hallucination":0,"overall":0,"reason":"理由"}]}。'
                 ),
             },
             {"role": "user", "content": json.dumps(compact, ensure_ascii=False)},
         ],
         "temperature": 0.0,
-        "max_tokens": min(4096, max(512, len(samples) * 180)),
+        "max_tokens": min(8192, max(512, len(samples) * 300)),
     }
     content = _post_chat(cfg, payload)
     parsed = _extract_json(content) or {}
     raw_results = parsed.get("results")
     if not isinstance(raw_results, list):
         raise RuntimeError(f"Judge 批量返回无法解析为 results 数组: {content[:180]}")
+
+    def _clamp(v, lo=0, hi=100):
+        try:
+            return max(lo, min(hi, int(round(float(v)))))
+        except (TypeError, ValueError):
+            return 0
+
     by_index = {}
     for position, item in enumerate(raw_results, 1):
         try:
             idx = int(item.get("index", position))
-            score = max(0, min(5, int(round(float(item.get("score", 0))))))
         except (AttributeError, TypeError, ValueError):
             continue
-        by_index[idx] = {"score": score, "reason": str(item.get("reason") or "")[:200]}
+        by_index[idx] = {
+            "accuracy": _clamp(item.get("accuracy")),
+            "completeness": _clamp(item.get("completeness")),
+            "relevance": _clamp(item.get("relevance")),
+            "hallucination": 1 if str(item.get("hallucination", "0")).strip() in ("1", "true", "True") else 0,
+            "overall": _clamp(item.get("overall")),
+            "reason": str(item.get("reason") or "")[:200],
+        }
     # Some compatible APIs return zero-based indexes even when prompted otherwise.
     if 0 in by_index and len(by_index) == len(samples):
         by_index = {idx + 1: value for idx, value in by_index.items()}

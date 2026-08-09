@@ -1,4 +1,4 @@
-﻿"""评：在验证集上跑推理并算指标 + 生成报告（对标久安「模型评测系统」）。
+"""评：在验证集上跑推理并算指标 + 生成报告（对标久安「模型评测系统」）。
 
 指标改进：
 - 采用字符级 n-gram 的 ROUGE-L(F) 与 BLEU-1/2，比原始"空格分词 token-F1"更贴近中文文本评测。
@@ -83,36 +83,73 @@ def _resolve_judge(cfg: dict, params: dict) -> tuple[bool, bool, str]:
 def identify_gaps(details: list[dict], use_judge: bool, top_k: int = 10) -> list[dict]:
     """从评测明细中找出低分样本，生成数据扩增建议(闭环引擎)。
 
-    判定：
-    - 启用 judge 时，judge_score <= 2 视为知识缺失/质量薄弱；
-    - rouge_l_f < 0.15 视为格式/覆盖薄弱。
+    判定（新版四维度0-100分）：
+    - hallucination=1：幻觉，模型编造了无法支撑的断言
+    - accuracy < 50：事实错误，知识缺失
+    - completeness < 50：关键信息遗漏
+    - relevance < 50：答非所问
+    - overall < 60：综合薄弱
+    - rouge_l_f < 0.15（judge未启用时）：格式偏差
     返回按严重度排序的薄弱点列表，带扩增建议。
     """
     gaps: list[dict] = []
     for d in details:
         rouge = d.get("rouge_l_f", 0.0)
-        jscore = d.get("judge_score")
         gap_type = None
         severity = 0.0
-        if use_judge and isinstance(jscore, (int, float)) and jscore <= 2:
-            gap_type = "知识缺失/质量薄弱"
-            severity = (3 - jscore) + (1 - rouge)
-        elif rouge < 0.15:
-            gap_type = "格式偏差/覆盖不足"
-            severity = 1 - rouge
+        suggestion = ""
+
+        if use_judge:
+            halluc = d.get("hallucination", 0)
+            acc = d.get("accuracy", 100)
+            comp = d.get("completeness", 100)
+            rel = d.get("relevance", 100)
+            overall = d.get("overall", 100)
+
+            if halluc == 1:
+                gap_type = "幻觉"
+                severity = 4.0
+                suggestion = f"针对「{d.get('prompt','')[:20]}」类问题纠正幻觉内容，补充3-5条事实准确的QA"
+            elif acc < 50:
+                gap_type = "知识缺失/事实错误"
+                severity = (100 - acc) / 25 + (1 - rouge)
+                suggestion = f"针对「{d.get('prompt','')[:20]}」类问题补充3-5条同领域不同场景QA，加强知识覆盖"
+            elif comp < 50:
+                gap_type = "完整性不足"
+                severity = (100 - comp) / 25
+                suggestion = f"针对「{d.get('prompt','')[:20]}」类问题补充更完整的答案范例，覆盖关键要点"
+            elif rel < 50:
+                gap_type = "答非所问"
+                severity = (100 - rel) / 25
+                suggestion = f"针对「{d.get('prompt','')[:20]}」类问题补充切题的QA，训练模型聚焦问题"
+            elif overall < 60:
+                gap_type = "综合薄弱"
+                severity = (60 - overall) / 15
+                suggestion = f"针对「{d.get('prompt','')[:20]}」类问题补充多角度QA，全面提升回答质量"
+            elif rouge < 0.15:
+                gap_type = "格式偏差/覆盖不足"
+                severity = 1 - rouge
+                suggestion = f"针对「{d.get('prompt','')[:20]}」类问题补充更多回答格式范例"
+        else:
+            # 未启用judge时，仅用rouge判定
+            if rouge < 0.15:
+                gap_type = "格式偏差/覆盖不足"
+                severity = 1 - rouge
+                suggestion = f"针对「{d.get('prompt','')[:20]}」类问题补充更多回答格式范例"
+
         if not gap_type:
             continue
-        prompt = d.get("prompt", "")
-        suggestion = (
-            f"针对「{prompt[:20]}」类问题补充 3-5 条同领域不同场景 QA，"
-            + ("加强知识覆盖" if gap_type.startswith("知识") else "让模型看到更多回答格式范例")
-        )
+
         gaps.append({
-            "prompt": prompt,
+            "prompt": d.get("prompt", ""),
             "reference": d.get("reference", ""),
             "prediction": d.get("prediction", ""),
             "rouge_l_f": rouge,
-            "judge_score": jscore,
+            "judge_score": d.get("overall"),
+            "accuracy": d.get("accuracy"),
+            "completeness": d.get("completeness"),
+            "relevance": d.get("relevance"),
+            "hallucination": d.get("hallucination"),
             "gap_type": gap_type,
             "severity": round(severity, 4),
             "suggestion": suggestion,
@@ -163,6 +200,39 @@ def collect_all_gaps() -> list[dict]:
     return out
 
 
+def _calc_delta(model_id: str, current_metrics: dict) -> dict | None:
+    """和同模型的上一份评测报告对比，计算指标变化。
+
+    读取 data/reports/ 下所有评测报告，找到同 model_id 的、时间早于当前的最新一份，
+    对比 metrics 中每个指标的变化值。
+    """
+    if not model_id or model_id in ("base", "", None):
+        return None
+    prev_report = None
+    prev_time = 0
+    for p in REPORTS.glob("*.json"):
+        try:
+            rep = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if rep.get("model_id") != model_id:
+            continue
+        t = rep.get("created_at", 0)
+        if t > prev_time and t < current_metrics.get("_eval_time", time.time()):
+            prev_time = t
+            prev_report = rep
+    if not prev_report or not prev_report.get("metrics"):
+        return None
+    prev_metrics = prev_report["metrics"]
+    delta = {}
+    for k, v in current_metrics.items():
+        if k.startswith("_"):
+            continue
+        if k in prev_metrics and isinstance(v, (int, float)):
+            delta[k] = round(v - prev_metrics[k], 4)
+    return delta if delta else None
+
+
 def _eval_one(
     cfg,
     model_id,
@@ -207,7 +277,10 @@ def _eval_one(
     preds = infer.generate_batch(model_id, users, log=lambda _m: None, params=gen_params, on_item=_infer_progress)
 
     details, agg, total_tokens = [], {"rouge_l_f": [], "bleu_1": [], "bleu_2": []}, 0
-    judge_scores: list[int] = []
+    judge_dim_scores: dict[str, list[float]] = {"accuracy": [], "completeness": [], "relevance": [], "overall": []}
+    judge_halluc_count = 0
+    judge_bad_count = 0
+    judge_scored = 0
     for i, (user, ref, res) in enumerate(zip(users, refs, preds), 1):
         sc = _score(res["answer"], ref)
         for k in agg:
@@ -227,9 +300,19 @@ def _eval_one(
         try:
             scored = judge.score_batch(cfg, details, log=log)
             for detail, jr in zip(details, scored):
-                detail["judge_score"] = jr["score"]
+                detail["judge_score"] = jr["overall"]
                 detail["judge_reason"] = jr["reason"]
-                judge_scores.append(jr["score"])
+                detail["accuracy"] = jr["accuracy"]
+                detail["completeness"] = jr["completeness"]
+                detail["relevance"] = jr["relevance"]
+                detail["hallucination"] = jr["hallucination"]
+                detail["overall"] = jr["overall"]
+                for dim in judge_dim_scores:
+                    judge_dim_scores[dim].append(jr[dim])
+                judge_halluc_count += jr["hallucination"]
+                if jr["overall"] < 60:
+                    judge_bad_count += 1
+                judge_scored += 1
             judge_status = "succeeded"
             if progress:
                 progress(f"{label}judge batch {len(rows)}/{len(rows)}")
@@ -247,14 +330,23 @@ def _eval_one(
 
     metrics = {k: _avg(v) for k, v in agg.items()}
     judge_summary = None
-    if use_judge and judge_scores:
-        avg5 = round(sum(judge_scores) / len(judge_scores), 3)
+    if use_judge and judge_scored > 0:
+        dim_avgs = {f"judge_{k}": _avg(v) for k, v in judge_dim_scores.items()}
+        bad_case_rate = round(judge_bad_count / judge_scored, 4)
+        hallucination_rate = round(judge_halluc_count / judge_scored, 4)
         judge_summary = {
-            "avg_score": avg5,
-            "normalized": round(avg5 / 5, 4),
-            "scored_samples": len(judge_scores),
+            "avg_score": dim_avgs["judge_overall"],
+            "dim_scores": dim_avgs,
+            "bad_case_rate": bad_case_rate,
+            "hallucination_rate": hallucination_rate,
+            "scored_samples": judge_scored,
         }
-        metrics["judge_avg"] = avg5
+        metrics.update(dim_avgs)
+        metrics["bad_case_rate"] = bad_case_rate
+        metrics["hallucination_rate"] = hallucination_rate
+
+    # --- Delta 对比：和同模型的上一份评测报告对比 ---
+    delta = _calc_delta(model_id, metrics)
 
     reliable = (not is_mock) and used_split != "train"
     gaps = identify_gaps(details, use_judge)
@@ -270,9 +362,10 @@ def _eval_one(
         "judge_enabled": use_judge,
         "judge_status": judge_status,
         "judge_error": judge_error,
-        "judge_scored_samples": len(judge_scores),
+        "judge_scored_samples": judge_scored,
         "samples": len(rows),
         "metrics": metrics,
+        "delta": delta,
         "gaps": gaps,
         "total_tokens": total_tokens,
         "created_at": time.time(),
@@ -291,11 +384,12 @@ def _eval_one(
         "report_id": report_id,
         "split": used_split,
         "metrics": metrics,
+        "delta": delta,
         "judge": judge_summary,
         "judge_enabled": use_judge,
         "judge_status": judge_status,
         "judge_error": judge_error,
-        "judge_scored_samples": len(judge_scores),
+        "judge_scored_samples": judge_scored,
         "reliable": reliable,
         "report_path": str(REPORTS / f"{report_id}.json"),
         "samples": len(rows),
