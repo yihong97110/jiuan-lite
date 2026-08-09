@@ -146,7 +146,7 @@ def score_one(cfg: dict, prompt: str, reference: str, prediction: str, log: Call
             {"role": "user", "content": user},
         ],
         "temperature": 0.0,
-        "max_tokens": 256,
+        "max_tokens": 1024,
     }
     content = _post_chat(cfg, payload)
     parsed = _extract_json(content) or {}
@@ -200,7 +200,7 @@ def score_batch(cfg: dict, samples: list[dict], log: Callable) -> list[dict]:
             {"role": "user", "content": json.dumps(compact, ensure_ascii=False)},
         ],
         "temperature": 0.0,
-        "max_tokens": min(8192, max(512, len(samples) * 300)),
+        "max_tokens": min(16384, max(1024, len(samples) * 600)),
     }
     content = _post_chat(cfg, payload)
     parsed = _extract_json(content) or {}
