@@ -29,6 +29,7 @@ from .schemas import (
     EvalReq,
     ImpactValidationReq,
     InferReq,
+    McpRegisterReq,
     AnnotationSaveReq,
     AnnotationWebhookReq,
     CustomAgentPlanReq,
@@ -40,6 +41,8 @@ from .schemas import (
     RagIngestReq,
     RagQueryReq,
     RagResolveReq,
+    SkillInvokeReq,
+    SkillRegisterReq,
     Stage,
     TrainReq,
     WorkflowReq,
@@ -541,6 +544,60 @@ async def chat_stream(req: ChatReq):
             yield chunk
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+# ---------------------------------------------------------------------------
+# Skill 管理
+# ---------------------------------------------------------------------------
+
+@app.get("/skills")
+def list_skills():
+    """列出所有已注册的技能。"""
+    return langchain_agent.list_skills()
+
+
+@app.post("/skills/register")
+def register_skill(req: SkillRegisterReq):
+    """注册自定义技能。"""
+    return langchain_agent.register_skill(req.name, req.description, req.template, req.category)
+
+
+@app.post("/skills/invoke")
+def invoke_skill(req: SkillInvokeReq):
+    """调用技能：用参数填充模板并返回完整 prompt。"""
+    return {"prompt": langchain_agent.invoke_skill(req.name, req.params)}
+
+
+# ---------------------------------------------------------------------------
+# MCP 服务器管理
+# ---------------------------------------------------------------------------
+
+@app.get("/mcp/servers")
+def list_mcp_servers():
+    """列出所有已注册的 MCP 服务器。"""
+    return langchain_agent.list_mcp_servers()
+
+
+@app.post("/mcp/register")
+def register_mcp_server(req: McpRegisterReq):
+    """注册一个 MCP 服务器。"""
+    return langchain_agent.register_mcp_server(req.name, req.command, req.description)
+
+
+# ---------------------------------------------------------------------------
+# Agent 工具列表
+# ---------------------------------------------------------------------------
+
+@app.get("/agent/tools")
+def list_agent_tools():
+    """列出 Agent 可用的所有工具。"""
+    if not langchain_agent.available():
+        return {"available": False, "tools": []}
+    tools = langchain_agent._build_tools()
+    return {
+        "available": True,
+        "tools": [{"name": t.name, "description": t.description[:100]} for t in tools],
+    }
 
 
 def main() -> None:

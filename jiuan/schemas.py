@@ -254,7 +254,7 @@ class ChatReq(BaseModel):
 class WorkflowReq(BaseModel):
     source: str = Field("data/samples.jsonl", description="jsonl 源文件（相对路径，位于项目内）")
     name: str = Field("workflow", description="数据集名前缀")
-    model_name: str = Field("qwen0.5b-sft", description="模型名前缀")
+    model_name: str = Field("workflow-model", description="模型名前缀")
     backend: Optional[str] = Field(None, description="auto|hf|llamafactory|mock")
     method: Optional[str] = Field(None, description="lora|full")
     epochs: Optional[int] = None
@@ -262,6 +262,24 @@ class WorkflowReq(BaseModel):
     valid_ratio: float = Field(0.2, ge=0.0, le=0.9)
     seed: int = 42
     probes: Optional[list[str]] = Field(None, description="推理抽检问题列表")
+
+
+class SkillRegisterReq(BaseModel):
+    name: str = Field(..., description="技能名称")
+    description: str = Field("", description="技能描述")
+    template: str = Field(..., description="prompt模板，用{param}占位")
+    category: str = Field("general", description="分类")
+
+
+class SkillInvokeReq(BaseModel):
+    name: str = Field(..., description="技能名称")
+    params: dict = Field(..., description="模板参数")
+
+
+class McpRegisterReq(BaseModel):
+    name: str = Field(..., description="MCP服务器名称")
+    command: str = Field(..., description="启动命令")
+    description: str = Field("", description="描述")
 
 
 class Task(BaseModel):
