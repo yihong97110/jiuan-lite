@@ -370,11 +370,40 @@ def rag_gaps(status: str = "pending", collection: str = "default"):
 
 @app.post("/rag/gaps/resolve")
 def rag_gaps_resolve(req: RagResolveReq):
-    """一键补充知识：追加到用户知识库→自动重新入库→标记缺口已解决。"""
+    """一键补充知识：追加到用户知识库->自动重新入库->标记缺口已解决。"""
     try:
         return rag_backend.resolve_gap(req.prompt, req.knowledge, log=lambda _m: None, collection=req.collection)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# API Key 管理：前端动态配置 DeepSeek/火山方舟/OpenAI Key
+# ---------------------------------------------------------------------------
+
+from pydantic import BaseModel
+
+class ApiKeySaveReq(BaseModel):
+    """前端保存 API Key 请求。"""
+    env_name: str  # DEEPSEEK_API_KEY / ARK_API_KEY / OPENAI_API_KEY
+    api_key: str
+
+
+@app.get("/config/api-keys")
+def get_api_keys():
+    """获取所有 API Key 配置状态（脱敏）。"""
+    from .common import get_api_keys as _get_keys
+    return _get_keys()
+
+
+@app.post("/config/api-keys")
+def save_api_key(req: ApiKeySaveReq):
+    """保存 API Key 到 .env 文件（长期持久化）+ 当前进程环境变量（立即生效）。"""
+    from .common import save_api_key as _save_key
+    result = _save_key(req.env_name, req.api_key)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
 
 
 @app.post("/analysis/breadth")

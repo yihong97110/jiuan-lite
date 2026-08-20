@@ -69,6 +69,7 @@
   <button data-tab="custom" onclick="switchTab('custom')">⑨ 通用训练 Agent</button>
   <button data-tab="chat" onclick="switchTab('chat')">⑩ 对话 · LangChain Agent</button>
   <button data-tab="local-agent" onclick="switchTab('local-agent')">⑪ 本地Agent · ReAct</button>
+  <button data-tab="settings" onclick="switchTab('settings')">⑫ 设置 · API Key</button>
 </nav>
 
 <main>
@@ -517,6 +518,20 @@
       </div>
     </div>
   </section>
+
+  <!-- ⑫ 设置 -->
+  <section id="page-settings" class="page">
+    <div class="card">
+      <h2>⑫ API Key 配置</h2>
+      <p class="desc">配置评测裁判和对话端点所需的 API Key。Key 保存到服务器 .env 文件，长期持久化，重启不丢失。配置后立即生效，无需重启服务。</p>
+      <div class="row" style="margin-bottom:12px;">
+        <button class="go" onclick="loadApiKeys()">刷新状态</button>
+      </div>
+      <div id="api-keys-list" style="display:flex;flex-direction:column;gap:16px;">
+        <p style="color:#999;">点击"刷新状态"查看当前 API Key 配置。</p>
+      </div>
+    </div>
+  </section>
 </main>
 
 <div id="task-modal" class="modal-bg" onclick="if(event.target===this)closeTaskModal()">
@@ -546,6 +561,7 @@ function switchTab(tab){
   else if(tab==="eval"){ loadTasks(tab); loadBreadthReports(); }
   else if(tab==="chat"){ loadChatModels(); loadSessions(); }
   else if(tab==="local-agent"){ laLoadModels(); laLoadSessions(); }
+  else if(tab==="settings"){ loadApiKeys(); }
   else { loadTasks(tab); }
 }
 function initialTabFromUrl(){
@@ -2219,6 +2235,63 @@ async function laSendChat(){
   }catch(e){
     document.getElementById("la-status").textContent = "错误: "+e.message;
     laAppend("assistant", "出错了: " + e.message);
+  }
+}
+
+// ===== ⑫ API Key 管理 =====
+async function loadApiKeys(){
+  const container = document.getElementById("api-keys-list");
+  container.innerHTML = "<p style='color:#999;'>加载中...</p>";
+  try{
+    const resp = await fetch("/config/api-keys");
+    const data = await resp.json();
+    let html = "";
+    for(const [envName, info] of Object.entries(data)){
+      const statusBadge = info.configured
+        ? `<span style="color:#28a745;font-size:12px;">已配置</span>`
+        : `<span style="color:#dc3545;font-size:12px;">未配置</span>`;
+      const preview = info.preview ? `<code style="color:#6c757d;font-size:12px;">${info.preview}</code>` : "";
+      html += `
+        <div style="padding:14px;border:1px solid #334155;border-radius:8px;background:#0f172a;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <strong>${info.label}</strong> ${statusBadge}
+          </div>
+          <div style="color:#94a3b8;font-size:12px;margin-bottom:8px;">${info.desc} · 环境变量: ${envName} ${preview}</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input id="apikey-${envName}" type="password" size="40" placeholder="输入新的 API Key..." style="background:#1e293b;border:1px solid #475569;color:#e2e8f0;border-radius:4px;padding:6px 10px;">
+            <button class="go" onclick="saveApiKey('${envName}')">保存</button>
+          </div>
+        </div>`;
+    }
+    container.innerHTML = html || "<p style='color:#999;'>无配置项。</p>";
+  }catch(e){
+    container.innerHTML = "<p style='color:#dc3545;'>加载失败: " + e.message + "</p>";
+  }
+}
+
+async function saveApiKey(envName){
+  const input = document.getElementById("apikey-" + envName);
+  const apiKey = input.value.trim();
+  if(!apiKey){
+    alert("请输入 API Key");
+    return;
+  }
+  try{
+    const resp = await fetch("/config/api-keys", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({env_name: envName, api_key: apiKey})
+    });
+    const data = await resp.json().catch(() => ({}));
+    if(!resp.ok || data.error){
+      alert("保存失败: " + (data.detail || data.error || ("HTTP " + resp.status)));
+    }else{
+      alert("API Key 已保存，立即生效！");
+      input.value = "";
+      loadApiKeys();
+    }
+  }catch(e){
+    alert("保存失败: " + e.message);
   }
 }
 </script>

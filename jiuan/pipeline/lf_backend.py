@@ -1,4 +1,4 @@
-﻿"""训练后端：LLaMA-Factory 二次整合。
+"""训练后端：LLaMA-Factory 二次整合。
 
 思路（对标久安「模型训练系统」用成熟开源件替换手写实现）：
 - 把我们已清洗的 messages 格式数据集，登记成 LLaMA-Factory 的 sharegpt 数据集；
@@ -106,9 +106,9 @@ def _build_config(cfg: dict, params: dict, run_dir: Path, ds_name: str, out_weig
         "dataset_dir": str(run_dir.resolve()),
         "template": cfg.get("llamafactory", {}).get("template", "qwen"),
         "cutoff_len": tcfg["max_seq_len"],
-        "per_device_train_batch_size": tcfg["batch_size"],
-        "gradient_accumulation_steps": tcfg["grad_accum"],
-        "learning_rate": float(tcfg["lr"]),
+        "per_device_train_batch_size": int(params.get("batch_size") or tcfg["batch_size"]),
+        "gradient_accumulation_steps": int(params.get("grad_accum") or tcfg["grad_accum"]),
+        "learning_rate": float(params.get("lr") or tcfg["lr"]),
         "num_train_epochs": float(epochs),
         "logging_steps": 1,
         "save_steps": tcfg["save_steps"],

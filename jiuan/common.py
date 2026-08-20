@@ -195,3 +195,65 @@ def apply_judge_overrides(cfg: dict, params: dict) -> dict:
     if platform == "volcengine":
         judge.setdefault("probe", False)
     return {**cfg, "judge": judge}
+
+
+# ---------------------------------------------------------------------------
+# API Key 管理：统一读写 .env，支持前端动态配置
+# ---------------------------------------------------------------------------
+
+# 所有受管理的 Key 定义：env变量名 -> 显示名/描述
+API_KEY_DEFS = {
+    "DEEPSEEK_API_KEY": {"label": "DeepSeek API Key", "desc": "Judge 评测裁判 + 对话端点", "platform": "deepseek"},
+    "ARK_API_KEY": {"label": "火山方舟 API Key", "desc": "火山方舟 DeepSeek 对话端点", "platform": "volcengine"},
+    "OPENAI_API_KEY": {"label": "OpenAI API Key", "desc": "OpenAI GPT 端点（可选）", "platform": "openai"},
+}
+
+
+def get_api_keys() -> dict:
+    """读取所有 API Key 的状态（脱敏，只显示是否已配置 + 前后4位）。"""
+    env_path = ROOT / ".env"
+    env_values = {}
+    if env_path.exists():
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            if "=" in line and not line.startswith("#"):
+                k, v = line.split("=", 1)
+                env_values[k.strip()] = v.strip()
+
+    result = {}
+    for env_name, info in API_KEY_DEFS.items():
+        val = os.environ.get(env_name, "") or env_values.get(env_name, "")
+        if val and len(val) > 8:
+            masked = val[:4] + "*" * (len(val) - 8) + val[-4:]
+        elif val:
+            masked = "****"
+        else:
+            masked = ""
+        result[env_name] = {
+            "label": info["label"],
+            "desc": info["desc"],
+            "platform": info["platform"],
+            "configured": bool(val),
+            "preview": masked,
+        }
+    return result
+
+
+def save_api_key(env_name: str, api_key: str) -> dict:
+    """保存单个 API Key 到 .env 文件 + 当前进程环境变量。"""
+    if env_name not in API_KEY_DEFS:
+        return {"error": f"未知的 Key 类型: {env_name}"}
+    if not api_key or not api_key.strip():
+        return {"error": "API Key 不能为空"}
+
+    api_key = api_key.strip()
+    os.environ[env_name] = api_key
+
+    env_path = ROOT / ".env"
+    lines = []
+    if env_path.exists():
+        lines = env_path.read_text(encoding="utf-8").splitlines()
+        lines = [l for l in lines if not l.startswith(f"{env_name}=")]
+    lines.append(f"{env_name}={api_key}")
+    env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    return {"env_name": env_name, "saved": True}
