@@ -1,0 +1,60 @@
+# Qwen2.5-7B-Instruct 训推配置（GPU 服务器版，需显存 >= 24GB，如 RTX 3090/A100）
+# API Key 一律走环境变量/.env（前端「设置·API Key」页可配），此处不留明文。
+chat:
+  # -- 火山方舟 DeepSeek（OpenAI 兼容）--
+  base_url: https://ark.cn-beijing.volces.com/api/plan/v3
+  model: deepseek-v4-flash
+  api_key_env: ARK_API_KEY            # 从 .env / 环境变量读取
+  api_key: ${ARK_API_KEY}             # 占位，勿填明文
+  # -- vLLM 本地推理（Linux+GPU，用微调后的模型提供服务）--
+  # base_url: http://127.0.0.1:8001/v1
+  # model: jiuam-model                # 与 vllm serve --served-model-name 对齐
+  # api_key: EMPTY
+
+infer:
+  backend: transformers     # auto | transformers | vllm | mock；GPU 上可切 vllm
+  device: cuda
+  precision: bf16           # 7B 用 bf16（24GB 卡不开量化可跑推理）
+  max_new_tokens: 512
+  do_sample: false          # greedy，输出稳定
+
+eval:
+  max_samples: 20
+  use_judge: auto           # auto | true | false
+
+judge:
+  # -- DeepSeek 官方 API（LLM-as-Judge 裁判）--
+  base_url: https://api.deepseek.com/v1
+  model: deepseek-v4-flash
+  api_key: ${DEEPSEEK_API_KEY}   # 从环境变量读取，勿硬编码
+  api_key_env: DEEPSEEK_API_KEY
+  probe: true               # 支持 /models 探测
+  require_key: true         # 无 key 自动回退 ROUGE/BLEU
+  timeout: 60
+  max_retries: 4
+
+model:
+  name: Qwen/Qwen2.5-7B-Instruct
+  local_dir: /root/autodl-tmp/models/qwen2.5-7b-instruct   # 服务器本地权重目录
+
+train:
+  backend: hf               # 7B 实测走 hf(peft)；llamafactory 亦可
+  device: cuda
+  precision: bf16
+  method: lora
+  epochs: 3
+  lr: 0.0002
+  batch_size: 2
+  grad_accum: 8             # 有效批 = 2*8 = 16
+  max_seq_len: 1024
+  gradient_checkpointing: true   # 7B 必开，省显存约 40%
+  save_steps: 50
+  lora:
+    r: 8
+    alpha: 16
+    dropout: 0.05
+    target_modules: [q_proj, k_proj, v_proj, o_proj]
+
+rag:
+  embedder: bge             # bge(LangChain 混合检索) | tfidf(离线兜底)
+  top_k: 5
