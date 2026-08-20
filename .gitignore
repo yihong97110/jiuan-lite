@@ -31,6 +31,7 @@ data/jiuan.db-shm
 # 密钥和配置（含API Key的配置不提交）
 .env
 configs/local.yaml
+configs/qwen7b.yaml
 
 # 日志
 *.log

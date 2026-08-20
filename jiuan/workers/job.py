@@ -1,4 +1,4 @@
-﻿"""独立 worker 进程入口：由控制面以子进程方式拉起，执行单个任务。
+"""独立 worker 进程入口：由控制面以子进程方式拉起，执行单个任务。
 
 用法（一般由 runner 自动调用）：
     python -m jiuan.workers.job <task_id>
@@ -12,11 +12,12 @@ import inspect
 import sys
 
 from .. import store
-from ..pipeline import dataprep, evaluate, infer, train, workflow
+from ..pipeline import dataprep, distill, evaluate, infer, train, workflow
 from ..schemas import Stage, TaskStatus
 
 _HANDLERS = {
     Stage.DATAPREP: dataprep.run,
+    Stage.DISTILL: distill.run,
     Stage.TRAIN: train.run,
     Stage.INFER: infer.run,
     Stage.EVAL: evaluate.run,

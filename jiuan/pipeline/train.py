@@ -1,4 +1,4 @@
-﻿"""训：SFT / LoRA 微调（Qwen2.5-0.5B），支持多训练后端。
+"""训：SFT / LoRA 微调（Qwen2.5-0.5B），支持多训练后端。
 
 后端选择（params.backend，缺省取 config.train.backend，默认 auto）：
 - mock         : 未装训练框架时的离线兜底，记忆训练集供推理演示。
@@ -17,6 +17,7 @@ from .. import registry
 from ..common import (
     DATASETS,
     MODELS,
+    ROOT,
     apply_train_overrides,
     load_config,
     mock_mode,
@@ -203,6 +204,18 @@ def _hf_train(cfg: dict, params: dict, dataset_id: str, out_dir: Path, log: Call
         progress("done")
     model.save_pretrained(out_dir / "weights")
     tok.save_pretrained(out_dir / "weights")
+
+    # 训练完成后显式释放 GPU 显存，避免后续推理 OOM
+    del model
+    del trainer
+    del ds
+    import gc, torch
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
+    log("[hf] GPU 显存已清理")
+
     return {
         "mode": "real",
         "backend": "hf",
@@ -214,7 +227,24 @@ def _hf_train(cfg: dict, params: dict, dataset_id: str, out_dir: Path, log: Call
 
 
 def run(params: dict, log: Callable[[str], None], progress: "Callable[[str], None] | None" = None) -> dict:
-    cfg = load_config()
+    # 根据前端选择的基座模型加载对应 config（0.5b / 7b）
+    base_model = (params.get("base_model") or "").lower()
+    if base_model == "7b":
+        cfg_path = ROOT / "configs" / "qwen7b.yaml"
+        if cfg_path.exists():
+            cfg = load_config(cfg_path)
+            log(f"基座模型: Qwen2.5-7B-Instruct (config={cfg_path.name})")
+        else:
+            # 回退：用默认 config 但覆盖模型路径为7B
+            cfg = load_config()
+            cfg.setdefault("model", {})["local_dir"] = "/root/autodl-tmp/models/qwen2.5-7b-instruct"
+            log(f"基座模型: Qwen2.5-7B-Instruct (路径覆盖，未找到 {cfg_path.name})")
+    elif base_model == "0.5b":
+        cfg = load_config(ROOT / "configs" / "qwen0.5b.yaml")
+        log("基座模型: Qwen2.5-0.5B-Instruct")
+    else:
+        cfg = load_config()
+        log(f"基座模型: config 默认 ({cfg.get('model', {}).get('name', '?')})")
     cfg = apply_train_overrides(cfg, params)
     dataset_id = params["dataset_id"]
     name = params.get("name", "qwen0.5b-sft")

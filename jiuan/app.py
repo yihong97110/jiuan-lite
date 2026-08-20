@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -26,6 +27,7 @@ from .schemas import (
     ChatCreateReq,
     ChatReq,
     DataprepReq,
+    DistillReq,
     EvalReq,
     ImpactValidationReq,
     InferReq,
@@ -49,6 +51,7 @@ from .schemas import (
 )
 from .workers import agent, biology_agent, custom_agent, oneclick_agent, runner
 from .pipeline import langchain_agent
+from .pipeline import local_agent
 
 app = FastAPI(title="jiuan-lite 训推平台", version="0.1.0")
 
@@ -56,6 +59,14 @@ app = FastAPI(title="jiuan-lite 训推平台", version="0.1.0")
 @app.on_event("startup")
 def _startup() -> None:
     store.init_db()
+    # 加载 .env 到 os.environ（用户前端填的 judge Key 持久化在此）
+    env_path = ROOT / ".env"
+    if env_path.exists():
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip())
 
 
 def _safe_source(source: str) -> str:
@@ -164,6 +175,15 @@ def dataprep(req: DataprepReq):
     return {"task_id": runner.submit(Stage.DATAPREP, params)}
 
 
+@app.post("/distill")
+def distill(req: DistillReq):
+    """蒸馏：调用外部大模型API生成50条问答对，保存为数据集。"""
+    params = req.model_dump()
+    if not params.get("api_key"):
+        raise HTTPException(400, "API key不能为空")
+    return {"task_id": runner.submit(Stage.DISTILL, params)}
+
+
 @app.post("/train")
 def train(req: TrainReq):
     _require_dataset(req.dataset_id)
@@ -178,7 +198,13 @@ def infer(req: InferReq):
 @app.post("/eval")
 def evaluate(req: EvalReq):
     _require_dataset(req.dataset_id)
-    return {"task_id": runner.submit(Stage.EVAL, req.model_dump())}
+    params = req.model_dump()
+    # 若前端填了 judge Key，先持久化到 .env（让 worker 子进程通过 env 回退读到），再脱敏不存明文 Key
+    if params.get("judge_api_key"):
+        from .common import apply_judge_overrides, load_config
+        apply_judge_overrides(load_config(), params)  # 仅做 .env 持久化 + os.environ 设置，结果丢弃
+        params["judge_api_key"] = None  # 脱敏：DB 和 worker 都不存明文 Key，走 env 回退
+    return {"task_id": runner.submit(Stage.EVAL, params)}
 
 
 @app.post("/workflow")
@@ -266,7 +292,10 @@ def custom_agent_select_model(req: CustomAgentSelectReq):
 
 @app.get("/tasks")
 def tasks(stage: str | None = None):
-    st = Stage(stage) if stage else None
+    try:
+        st = Stage(stage) if stage else None
+    except ValueError:
+        st = None
     return [t.model_dump() for t in store.list_tasks(st)]
 
 
@@ -547,6 +576,64 @@ async def chat_stream(req: ChatReq):
 
 
 # ---------------------------------------------------------------------------
+# 本地 ReAct Agent（使用自己训练的模型，不依赖外部 API）
+# ---------------------------------------------------------------------------
+
+@app.get("/local_agent/available")
+def local_agent_available():
+    """检查本地 Agent 是否可用（是否有已训练模型）。"""
+    models = registry.list_models()
+    return {"available": len(models) > 0, "model_count": len(models)}
+
+
+@app.post("/local_agent/session")
+def local_agent_create_session(req: ChatCreateReq):
+    """创建本地 ReAct Agent 会话，使用自己训练的模型。"""
+    return local_agent.create_session(
+        model_id=req.model_id,
+        system_prompt=req.system_prompt,
+        memory_window=req.memory_window or 5,
+    )
+
+
+@app.get("/local_agent/sessions")
+def local_agent_sessions():
+    """列出所有本地 Agent 会话。"""
+    return {"sessions": list(local_agent.list_sessions())}
+
+
+@app.get("/local_agent/sessions/{session_id}")
+def local_agent_session_detail(session_id: str):
+    """获取本地 Agent 会话详情。"""
+    session = local_agent.get_session(session_id)
+    if not session:
+        raise HTTPException(404, f"会话不存在: {session_id}")
+    return session
+
+
+@app.delete("/local_agent/sessions/{session_id}")
+def local_agent_delete_session(session_id: str):
+    """删除本地 Agent 会话。"""
+    if not local_agent.delete_session(session_id):
+        raise HTTPException(404, f"会话不存在: {session_id}")
+    return {"deleted": session_id}
+
+
+@app.post("/local_agent/chat")
+def local_agent_chat(req: ChatReq):
+    """本地 ReAct Agent 对话：使用自己训练的模型 + RAG + 工具调用。
+
+    不依赖任何外部 API，完全本地运行。
+    """
+    try:
+        return local_agent.chat(req.session_id, req.message)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(500, f"本地 Agent 对话失败: {exc}") from exc
+
+
+# ---------------------------------------------------------------------------
 # Skill 管理
 # ---------------------------------------------------------------------------
 
@@ -602,8 +689,20 @@ def list_agent_tools():
 
 def main() -> None:
     import os
+    import sys
 
     import uvicorn
+
+    # 解析 --config 参数，写入环境变量供 worker 子进程继承
+    config_path = None
+    args = sys.argv[1:]
+    for i, a in enumerate(args):
+        if a == "--config" and i + 1 < len(args):
+            config_path = args[i + 1]
+        elif a.startswith("--config="):
+            config_path = a.split("=", 1)[1]
+    if config_path:
+        os.environ["JIUAN_CONFIG"] = config_path
 
     host = os.environ.get("JIUAN_HOST", "127.0.0.1")
     port = int(os.environ.get("JIUAN_PORT", "8000"))

@@ -40,12 +40,12 @@ eval:
   use_judge: auto       # auto | true | false （auto: judge服务可达则用，否则只出ROUGE/BLEU）
 judge:
   # LLM-as-Judge 裁判端点(OpenAI兼容)。留空 base_url 则禁用 judge。
-  # -- 云端(火山方舟 Volcengine Ark)--
-  base_url: https://ark.cn-beijing.volces.com/api/plan/v3
-  model: deepseek-v4-pro
-  api_key: ""                        # 留空则读环境变量 ARK_API_KEY
-  api_key_env: ARK_API_KEY  # 环境变量名；系统服务可在 systemd 里配置
-  probe: false            # 火山不提供 /models 探测接口；仅凭 base_url+key 判定可用
+  # -- DeepSeek 官方 API --
+  base_url: https://api.deepseek.com/v1
+  model: deepseek-v4-flash
+  api_key: ${DEEPSEEK_API_KEY}  # 从环境变量读取，勿硬编码
+  api_key_env: DEEPSEEK_API_KEY  # 环境变量名；系统服务可在 systemd 里配置
+  probe: true             # DeepSeek 官方支持 /models 探测接口
   require_key: true       # 无 key 时视为不可用，自动回退 ROUGE/BLEU
   timeout: 60
   max_retries: 4       # 429 时按 2/4/8 秒退避；评测已改为整批一次请求
@@ -67,8 +67,8 @@ annotation:
 chat:
   # -- 火山方舟 DeepSeek --
   base_url: https://ark.cn-beijing.volces.com/api/plan/v3
-  model: deepseek-v4-pro
-  api_key: ""                         # 留空则读环境变量 ARK_API_KEY
+  model: deepseek-v4-flash
+  api_key: ${VOLCES_API_KEY}  # 从环境变量读取，勿硬编码
   # -- vLLM 本地推理（Linux+GPU，用微调后的模型提供服务）--
   # base_url: http://127.0.0.1:8001/v1
   # model: jiuam-model                   # 与 vllm serve --served-model-name 对齐

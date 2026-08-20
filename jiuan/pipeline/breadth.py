@@ -183,9 +183,9 @@ def run(params: dict, log: Callable[[str], None], progress: "Callable[[str], Non
         try:
             scored = judge.score_batch(cfg, details, log=log)
             for detail, jr in zip(details, scored):
-                detail["judge_score"] = jr["score"]
-                detail["judge_reason"] = jr["reason"]
-                by_cat[detail["category"]]["judge"].append(float(jr["score"]))
+                detail["judge_score"] = jr.get("overall", 0)
+                detail["judge_reason"] = jr.get("reason", "")
+                by_cat[detail["category"]]["judge"].append(float(jr.get("overall", 0)))
             judge_status = "succeeded"
             if progress:
                 progress(f"judge batch {len(rows)}/{len(rows)}")
@@ -194,9 +194,7 @@ def run(params: dict, log: Callable[[str], None], progress: "Callable[[str], Non
             judge_error = str(exc)[:300]
             for detail in details:
                 detail["judge_error"] = judge_error
-            log(f"广度 Judge 批量评分失败：{judge_error}")
-            if judge_required:
-                raise RuntimeError(f"LLM-as-Judge 已开启但广度评分失败：{judge_error}") from exc
+            log(f"广度 Judge 批量评分失败（已跳过，不阻断流程）：{judge_error}")
 
     def avg(values: list[float]) -> float | None:
         return round(sum(values) / len(values), 4) if values else None

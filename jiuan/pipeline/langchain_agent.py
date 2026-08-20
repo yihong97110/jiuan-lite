@@ -1,22 +1,23 @@
-"""LangChain Agent：为训练后的模型提供多轮对话与工具调用能力。
+"""LangChain Agent：为训练后的模型提供多轮对话与工具调用能力（LangGraph 版）。
 
-基于 LangChain 构建，覆盖以下工程化能力：
-- 多轮对话与上下文记忆管理（动态滑动窗口截断）
+基于 LangChain + LangGraph 构建，覆盖以下工程化能力：
+- 多轮对话与上下文记忆管理（MemorySaver checkpointer 持久化 + 滑动窗口截断）
 - 工具调用：RAG 知识检索、模型仓库查询、血缘追踪
 - 流式输出（SSE，逐 token 返回）
 - 可对接任意 OpenAI 兼容端点（vLLM 本地服务 / DeepSeek API / 火山方舟等）
 
-LangChain 组件映射：
+LangChain/LangGraph 组件映射：
   ChatOpenAI            -> 统一封装 LLM 接口（对接 vLLM/DeepSeek/方舟）
   @tool                 -> 工具定义，封装现有 rag_backend / registry 能力
-  create_tool_calling_agent -> Agent 编排（ReAct + 原生 function calling）
-  AgentExecutor         -> Agent 执行器（工具调用循环、错误处理）
+  create_react_agent    -> LangGraph 预置 ReAct Agent（状态机：agent→tools→agent循环）
+  MemorySaver           -> checkpointer 持久化记忆（thread_id 隔离 + 自动历史恢复）
   astream_events(v2)    -> 流式 token 输出 + 工具调用事件追踪
 
 设计：
-- 每个会话(session)独立维护消息历史，按 memory_window 轮数滑动窗口截断
+- 每个会话(session)用 thread_id 隔离，MemorySaver 自动存取历史
 - 工具直接调用现有 pipeline 能力，不重复造轮子
-- langchain 未安装时模块可正常导入，API 层返回友好提示
+- langchain/langgraph 未安装时模块可正常导入，API 层返回友好提示
+- API 不支持 function calling 时降级为普通对话（_direct_chat）
 """
 from __future__ import annotations
 
@@ -40,17 +41,49 @@ try:
 except Exception:
     LANGCHAIN_AVAILABLE = False
 
+# LangGraph 可用性检测（独立于 langchain-openai）
+try:
+    from langgraph.prebuilt import create_react_agent  # noqa: F401
+    from langgraph.checkpoint.memory import MemorySaver  # noqa: F401
+    from langgraph.graph import END  # noqa: F401
+    LANGGRAPH_AVAILABLE = True
+except Exception:
+    LANGGRAPH_AVAILABLE = False
+
 
 def available() -> bool:
     """LangChain 是否可用（已安装 langchain-openai）。"""
     return LANGCHAIN_AVAILABLE
 
 
+def langgraph_available() -> bool:
+    """LangGraph 是否可用（已安装 langgraph）。"""
+    return LANGGRAPH_AVAILABLE
+
+
 # ---------------------------------------------------------------------------
-# 会话存储（内存；生产可换 Redis/DB）
+# 会话存储 + MemorySaver checkpointer
 # ---------------------------------------------------------------------------
 
 _sessions: dict[str, dict] = {}
+
+# 全局 MemorySaver：所有会话共享一个 checkpointer，通过 thread_id 隔离
+_memory_saver = None
+
+
+def _get_memory_saver():
+    """获取全局 MemorySaver 实例（惰性初始化）。
+
+    MemorySaver 是 LangGraph 的内存 checkpointer：
+    - 按 thread_id（= session_id）隔离不同会话的状态
+    - 自动保存和恢复消息历史，不需要手动管理 messages 列表
+    - 生产环境可换 SQLiteSaver/PostgresSaver 实现持久化
+    """
+    global _memory_saver
+    if _memory_saver is None and LANGGRAPH_AVAILABLE:
+        from langgraph.checkpoint.memory import MemorySaver
+        _memory_saver = MemorySaver()
+    return _memory_saver
 
 
 # ---------------------------------------------------------------------------
@@ -84,20 +117,40 @@ def _resolve_api_key(cfg: dict) -> str:
 # LLM 工厂
 # ---------------------------------------------------------------------------
 
-def _get_llm(cfg: dict | None = None, streaming: bool = False):
+def _get_llm(cfg: dict | None = None, streaming: bool = False, model_id: str = ""):
     """创建 LangChain ChatOpenAI 实例，指向 OpenAI 兼容端点。
 
     可对接：
     - vLLM 本地推理服务（Linux+GPU，config.chat.base_url 指向 vllm serve 端口）
     - DeepSeek API / 火山方舟（config.chat.base_url 指向云端端点）
     - 任意 OpenAI 兼容服务
+
+    Args:
+        model_id: 如果传入已训练模型ID，会尝试从 registry 读取其 served_model_name，
+                  用于 vLLM 多 LoRA 场景下切换不同训练模型。
     """
     from langchain_openai import ChatOpenAI
 
     chat_cfg = _chat_cfg(cfg)
+    model_name = chat_cfg.get("model", "jiuan-model")
+
+    # 如果指定了已训练模型，尝试从 registry 读取对应的 served_model_name
+    if model_id:
+        try:
+            from .. import registry
+            models = registry.list_models()
+            for m in models:
+                if m.get("model_id") == model_id:
+                    # 优先用 meta 里记录的 served_model_name
+                    served = m.get("served_model_name") or m.get("name") or model_id
+                    model_name = served
+                    break
+        except Exception:
+            pass  # 读取失败就用配置里的默认 model
+
     return ChatOpenAI(
         base_url=chat_cfg.get("base_url", "http://127.0.0.1:8001/v1"),
-        model=chat_cfg.get("model", "jiuan-model"),
+        model=model_name,
         api_key=_resolve_api_key(chat_cfg),
         temperature=float(chat_cfg.get("temperature", 0.7)),
         max_tokens=int(chat_cfg.get("max_tokens", 1024)),
@@ -304,7 +357,7 @@ def _load_mcp_tools() -> list:
 
                 Returns:
                     MCP 服务器返回的结果
-                """
+                """   
                 return _call_mcp_server(sname, scmd, query)
             mcp_tool.name = f"mcp_{sname}"
             mcp_tool.description = f"MCP工具({sdesc}): {sdesc}。传入query参数调用。"
@@ -542,6 +595,56 @@ def _build_agent(llm, tools, system_prompt: str):
     )
 
 
+def _build_graph(llm, tools, system_prompt: str, memory_window: int = 10):
+    """构建 LangGraph ReAct Agent（create_react_agent + MemorySaver）。
+
+    LangGraph 状态机流程：
+      START → agent_node（LLM 决策是否调工具）
+            → tools_condition（有工具调用 → tool_node；无 → END）
+            → tool_node（并行执行工具）
+            → 回到 agent_node（看是否还要调工具）
+            → ...循环直到 LLM 不再调工具或达到 max_iterations
+
+    对比 AgentExecutor 的优势：
+    1. 状态机可视化（可以画流程图）
+    2. MemorySaver 自动持久化历史（thread_id 隔离）
+    3. 支持并行工具调用
+    4. 支持中断/恢复（checkpointer）
+
+    Args:
+        llm: ChatOpenAI 实例
+        tools: 工具列表
+        system_prompt: 系统提示词
+        memory_window: 滑动窗口轮数（用于 state_modifier 截断历史）
+    """
+    from langgraph.prebuilt import create_react_agent
+
+    # state_modifier：在每次调用 LLM 前截断历史，保留最近 memory_window 轮
+    # LangGraph 的 messages 会自动累积，需要 state_modifier 控制上下文长度
+    def _trim_messages(messages):
+        """滑动窗口截断：保留 system + 最近 N 轮对话。"""
+        from langchain_core.messages import SystemMessage
+        # 分离 system 消息和对话消息
+        system_msgs = [m for m in messages if isinstance(m, SystemMessage)]
+        conv_msgs = [m for m in messages if not isinstance(m, SystemMessage)]
+        # 保留最近 memory_window*2 条（每轮 = user + assistant）
+        if memory_window > 0:
+            conv_msgs = conv_msgs[-(memory_window * 2):]
+        return system_msgs + conv_msgs
+
+    # LangGraph 新版 API 兼容：优先用 prompt 参数（接受 callable），回退 state_modifier
+    # 不同版本参数名不同，逐个尝试
+    kwargs = {"checkpointer": _get_memory_saver()}
+    try:
+        graph = create_react_agent(llm, tools, prompt=_trim_messages, **kwargs)
+    except TypeError:
+        try:
+            graph = create_react_agent(llm, tools, state_modifier=_trim_messages, **kwargs)
+        except TypeError:
+            graph = create_react_agent(llm, tools, **kwargs)
+    return graph
+
+
 # ---------------------------------------------------------------------------
 # 滑动窗口记忆管理
 # ---------------------------------------------------------------------------
@@ -600,9 +703,12 @@ def create_session(
         "system_prompt": system_prompt,
         "model_id": model_id,
         "memory_window": memory_window,
-        "messages": [],
+        "messages": [],  # 兼容旧 API（list_sessions 读 message_count）
         "created_at": time.time(),
     }
+
+    # 如果 LangGraph 可用，用 MemorySaver 初始化会话状态（thread_id = session_id）
+    # MemorySaver 会在首次 invoke 时自动创建 checkpoint，这里不需要预初始化
     return _sessions[session_id]
 
 
@@ -633,45 +739,115 @@ def delete_session(session_id: str) -> bool:
 def chat(session_id: str, message: str) -> dict:
     """非流式对话：Agent 处理用户消息并返回完整回复。
 
+    优先级：
+    1. LangGraph create_react_agent（状态机 + MemorySaver 持久化记忆）
+    2. AgentExecutor（旧版兼容，langgraph 不可用时）
+    3. _direct_chat（降级模式，API 不支持 function calling 时）
+
     流程：
-    1. 从会话历史构建滑动窗口记忆
+    1. 构建 LLM + 工具
     2. Agent 决定是否调用工具（RAG 检索 / 模型查询）
     3. LLM 生成最终回复
-    4. 更新会话历史
-
-    若 API 不支持 function calling，自动降级为普通对话（无工具调用）。
+    4. 更新会话历史（兼容旧 API）
     """
     session = _sessions.get(session_id)
     if not session:
         raise ValueError(f"会话不存在: {session_id}")
 
     cfg = load_config()
-    llm = _get_llm(cfg, streaming=False)
+    llm = _get_llm(cfg, streaming=False, model_id=session.get("model_id", ""))
     history = _build_history(session["messages"], session["memory_window"])
 
     intermediate_steps = []
-    try:
-        tools = _build_tools()
-        agent_executor = _build_agent(llm, tools, session["system_prompt"])
-        result = agent_executor.invoke({
-            "input": message,
-            "chat_history": history,
-        })
-        answer = result.get("output", "")
-        for step in result.get("intermediate_steps", []):
-            if isinstance(step, tuple) and len(step) >= 2:
-                action, observation = step
-                intermediate_steps.append({
-                    "tool": getattr(action, "tool", str(action)),
-                    "input": getattr(action, "tool_input", ""),
-                    "output": str(observation)[:500],
-                })
-    except Exception as exc:
-        # 降级：API 不支持 function calling 时，走普通对话（直接 HTTP，绕过 LangChain）
-        answer = _direct_chat(cfg, session["system_prompt"] or DEFAULT_SYSTEM_PROMPT, history, message)
-        intermediate_steps = [{"tool": "(降级模式: 普通对话, 工具不可用)", "input": str(exc)[:200], "output": ""}]
+    answer = ""
 
-    # 更新会话历史
+    # --- 优先用 LangGraph ---
+    if LANGGRAPH_AVAILABLE:
+        try:
+            from langchain_core.messages import HumanMessage, SystemMessage
+            tools = _build_tools()
+            graph = _build_graph(llm, tools, session["system_prompt"], session["memory_window"])
+
+            # LangGraph 配置：thread_id 用于 MemorySaver 隔离会话
+            config = {"configurable": {"thread_id": session_id}}
+            # 构建输入消息（含 system prompt）
+            input_msgs = [
+                SystemMessage(content=session["system_prompt"] or DEFAULT_SYSTEM_PROMPT),
+                HumanMessage(content=message),
+            ]
+            result = graph.invoke({"messages": input_msgs}, config=config)
+
+            # 提取最终回复
+            result_msgs = result.get("messages", [])
+            if result_msgs:
+                last = result_msgs[-1]
+                answer = getattr(last, "content", str(last))
+
+            # 提取工具调用步骤（从 messages 里的 ToolMessage 提取）
+            from langchain_core.messages import ToolMessage, AIMessage
+            for msg in result_msgs:
+                if isinstance(msg, ToolMessage):
+                    intermediate_steps.append({
+                        "tool": msg.name or "tool",
+                        "input": "",
+                        "output": str(msg.content)[:500],
+                    })
+                elif isinstance(msg, AIMessage) and msg.tool_calls:
+                    for tc in msg.tool_calls:
+                        intermediate_steps.append({
+                            "tool": tc.get("name", "tool"),
+                            "input": str(tc.get("args", ""))[:200],
+                            "output": "",
+                        })
+        except Exception as exc:
+            # LangGraph 失败，降级到 AgentExecutor
+            intermediate_steps = [{"tool": f"(LangGraph 失败，降级: {str(exc)[:80]})", "input": "", "output": ""}]
+            try:
+                tools = _build_tools()
+                agent_executor = _build_agent(llm, tools, session["system_prompt"])
+                result = agent_executor.invoke({"input": message, "chat_history": history})
+                answer = result.get("output", "")
+                for step in result.get("intermediate_steps", []):
+                    if isinstance(step, tuple) and len(step) >= 2:
+                        action, observation = step
+                        intermediate_steps.append({
+                            "tool": getattr(action, "tool", str(action)),
+                            "input": getattr(action, "tool_input", ""),
+                            "output": str(observation)[:500],
+                        })
+            except Exception as exc2:
+                answer = _direct_chat(cfg, session["system_prompt"] or DEFAULT_SYSTEM_PROMPT, history, message)
+                intermediate_steps.append({
+                    "tool": "(降级模式: 普通对话)",
+                    "input": str(exc2)[:200],
+                    "output": "",
+                })
+
+    # --- 降级到 AgentExecutor（langgraph 不可用）---
+    elif LANGCHAIN_AVAILABLE:
+        try:
+            tools = _build_tools()
+            agent_executor = _build_agent(llm, tools, session["system_prompt"])
+            result = agent_executor.invoke({"input": message, "chat_history": history})
+            answer = result.get("output", "")
+            for step in result.get("intermediate_steps", []):
+                if isinstance(step, tuple) and len(step) >= 2:
+                    action, observation = step
+                    intermediate_steps.append({
+                        "tool": getattr(action, "tool", str(action)),
+                        "input": getattr(action, "tool_input", ""),
+                        "output": str(observation)[:500],
+                    })
+        except Exception as exc:
+            answer = _direct_chat(cfg, session["system_prompt"] or DEFAULT_SYSTEM_PROMPT, history, message)
+            intermediate_steps = [{"tool": "(降级模式: 普通对话, 工具不可用)", "input": str(exc)[:200], "output": ""}]
+
+    # --- 最终降级：直接 HTTP ---
+    else:
+        answer = _direct_chat(cfg, session["system_prompt"] or DEFAULT_SYSTEM_PROMPT, history, message)
+        intermediate_steps = [{"tool": "(降级模式: langchain 未安装)", "input": "", "output": ""}]
+
+    # 更新会话历史（兼容旧 API，MemorySaver 也会自动存）
     session["messages"].append({"role": "user", "content": message})
     session["messages"].append({"role": "assistant", "content": answer})
 
@@ -680,6 +856,7 @@ def chat(session_id: str, message: str) -> dict:
         "answer": answer,
         "tool_calls": intermediate_steps,
         "messages": session["messages"],
+        "backend": "langgraph" if LANGGRAPH_AVAILABLE else ("langchain" if LANGCHAIN_AVAILABLE else "direct"),
     }
 
 
@@ -689,6 +866,11 @@ def chat(session_id: str, message: str) -> dict:
 
 async def chat_stream(session_id: str, message: str) -> AsyncGenerator[str, None]:
     """流式对话：逐 token 返回（SSE 格式）。
+
+    优先级：
+    1. LangGraph astream_events（状态机 + MemorySaver）
+    2. AgentExecutor astream_events（旧版兼容）
+    3. _direct_chat_stream（降级模式，直接 HTTP 流式）
 
     事件类型：
     - {"token": "...}"     : LLM 生成的 token（逐字流式输出）
@@ -703,31 +885,94 @@ async def chat_stream(session_id: str, message: str) -> AsyncGenerator[str, None
         return
 
     cfg = load_config()
-    llm = _get_llm(cfg, streaming=True)
+    llm = _get_llm(cfg, streaming=True, model_id=session.get("model_id", ""))
     history = _build_history(session["messages"], session["memory_window"])
 
     full_answer = ""
-    try:
-        tools = _build_tools()
-        agent_executor = _build_agent(llm, tools, session["system_prompt"])
-        async for event in agent_executor.astream_events(
-            {"input": message, "chat_history": history},
-            version="v2",
-        ):
-            kind = event["event"]
-            if kind == "on_chat_model_stream":
-                chunk = event["data"].get("chunk")
-                token = chunk.content if chunk and hasattr(chunk, "content") else ""
-                if token:
+
+    # --- 优先用 LangGraph 流式 ---
+    if LANGGRAPH_AVAILABLE:
+        try:
+            from langchain_core.messages import HumanMessage, SystemMessage
+            tools = _build_tools()
+            graph = _build_graph(llm, tools, session["system_prompt"], session["memory_window"])
+            config = {"configurable": {"thread_id": session_id}}
+            input_msgs = [
+                SystemMessage(content=session["system_prompt"] or DEFAULT_SYSTEM_PROMPT),
+                HumanMessage(content=message),
+            ]
+
+            async for event in graph.astream_events(
+                {"messages": input_msgs},
+                config=config,
+                version="v2",
+            ):
+                kind = event["event"]
+                if kind == "on_chat_model_stream":
+                    chunk = event["data"].get("chunk")
+                    token = chunk.content if chunk and hasattr(chunk, "content") else ""
+                    if token:
+                        full_answer += token
+                        yield _sse({"token": token})
+                elif kind == "on_tool_start":
+                    yield _sse({"tool_start": event.get("name", "")})
+                elif kind == "on_tool_end":
+                    yield _sse({"tool_end": event.get("name", "")})
+        except Exception as exc:
+            # LangGraph 失败，降级到 AgentExecutor 或直接流式
+            yield _sse({"tool_start": f"(LangGraph 降级: {str(exc)[:40]})"})
+            try:
+                tools = _build_tools()
+                agent_executor = _build_agent(llm, tools, session["system_prompt"])
+                async for event in agent_executor.astream_events(
+                    {"input": message, "chat_history": history},
+                    version="v2",
+                ):
+                    kind = event["event"]
+                    if kind == "on_chat_model_stream":
+                        chunk = event["data"].get("chunk")
+                        token = chunk.content if chunk and hasattr(chunk, "content") else ""
+                        if token:
+                            full_answer += token
+                            yield _sse({"token": token})
+                    elif kind == "on_tool_start":
+                        yield _sse({"tool_start": event.get("name", "")})
+                    elif kind == "on_tool_end":
+                        yield _sse({"tool_end": event.get("name", "")})
+            except Exception as exc2:
+                async for token in _direct_chat_stream(cfg, session["system_prompt"] or DEFAULT_SYSTEM_PROMPT, history, message):
                     full_answer += token
                     yield _sse({"token": token})
-            elif kind == "on_tool_start":
-                yield _sse({"tool_start": event.get("name", "")})
-            elif kind == "on_tool_end":
-                yield _sse({"tool_end": event.get("name", "")})
-    except Exception as exc:
-        # 降级：API 不支持 function calling，走普通流式对话（直接 HTTP）
-        yield _sse({"tool_start": "(降级模式: 普通对话)"})
+
+    # --- 降级到 AgentExecutor ---
+    elif LANGCHAIN_AVAILABLE:
+        try:
+            tools = _build_tools()
+            agent_executor = _build_agent(llm, tools, session["system_prompt"])
+            async for event in agent_executor.astream_events(
+                {"input": message, "chat_history": history},
+                version="v2",
+            ):
+                kind = event["event"]
+                if kind == "on_chat_model_stream":
+                    chunk = event["data"].get("chunk")
+                    token = chunk.content if chunk and hasattr(chunk, "content") else ""
+                    if token:
+                        full_answer += token
+                        yield _sse({"token": token})
+                elif kind == "on_tool_start":
+                    yield _sse({"tool_start": event.get("name", "")})
+                elif kind == "on_tool_end":
+                    yield _sse({"tool_end": event.get("name", "")})
+        except Exception as exc:
+            yield _sse({"tool_start": "(降级模式: 普通对话)"})
+            async for token in _direct_chat_stream(cfg, session["system_prompt"] or DEFAULT_SYSTEM_PROMPT, history, message):
+                full_answer += token
+                yield _sse({"token": token})
+
+    # --- 最终降级：直接 HTTP 流式 ---
+    else:
+        yield _sse({"tool_start": "(降级模式: langchain 未安装)"})
         async for token in _direct_chat_stream(cfg, session["system_prompt"] or DEFAULT_SYSTEM_PROMPT, history, message):
             full_answer += token
             yield _sse({"token": token})

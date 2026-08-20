@@ -1,4 +1,4 @@
-﻿"""Shared helpers: paths, config loading, mock detection."""
+"""Shared helpers: paths, config loading, mock detection."""
 from __future__ import annotations
 
 import os
@@ -19,7 +19,12 @@ for _p in (DATASETS, MODELS, REPORTS, REGISTRY):
 
 
 def load_config(path: str | Path | None = None) -> dict:
-    path = Path(path) if path else ROOT / "configs" / "qwen0.5b.yaml"
+    # 优先级：显式path > 环境变量JIUAN_CONFIG > 默认0.5b
+    # 环境变量让worker子进程继承app进程的配置选择
+    if path is None:
+        env_path = os.environ.get("JIUAN_CONFIG")
+        path = Path(env_path) if env_path else ROOT / "configs" / "qwen0.5b.yaml"
+    path = Path(path)
     with open(path, "r", encoding="utf-8") as fh:
         return yaml.safe_load(fh)
 
@@ -123,3 +128,70 @@ def apply_infer_overrides(cfg: dict, params: dict) -> dict:
         if v is not None and v != "":
             infer[key] = v
     return {**cfg, "infer": infer}
+
+
+# 平台 → 默认 base_url 映射（与 distill.py _resolve_base_url 一致，本文件内定义避免循环导入）
+_PLATFORM_BASE_URLS = {
+    "deepseek": "https://api.deepseek.com/v1",
+    "openai": "https://api.openai.com/v1",
+    "volcengine": "https://ark.cn-beijing.volces.com/api/v3",
+}
+# 平台 → .env 变量名映射（volcengine 复用 judge.py 已有的 ARK_API_KEY 回退）
+_PLATFORM_ENV_KEY = {
+    "deepseek": "DEEPSEEK_API_KEY",
+    "openai": "OPENAI_API_KEY",
+    "volcengine": "ARK_API_KEY",
+    "custom": "CUSTOM_JUDGE_API_KEY",
+}
+
+
+def _persist_judge_key_to_env(platform: str, api_key: str) -> str:
+    """把 API Key 写入 .env 文件 + os.environ，返回 env 变量名。
+
+    用户填一次 Key 后长期保存，后续评测 judge.py._resolve_key 走 env 回退自动读到。
+    """
+    env_name = _PLATFORM_ENV_KEY.get(platform, "CUSTOM_JUDGE_API_KEY")
+    os.environ[env_name] = api_key  # 当前进程立即生效
+    env_path = ROOT / ".env"
+    lines = []
+    if env_path.exists():
+        lines = env_path.read_text(encoding="utf-8").splitlines()
+        lines = [l for l in lines if not l.startswith(f"{env_name}=")]  # 去旧的同名行
+    lines.append(f"{env_name}={api_key}")
+    env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return env_name
+
+
+def apply_judge_overrides(cfg: dict, params: dict) -> dict:
+    """把请求/前端传入的 judge 配置覆盖到 config.judge + Key 持久化到 .env。
+
+    - 仅当 params 提供 judge_platform 或 judge_base_url 时才介入，避免无配置请求误伤 yaml 默认值。
+    - platform→base_url 自动映射；custom 平台必须显式给 judge_base_url。
+    - judge_api_key 非空时写入 .env 长期保存 + 设到 cfg 让本次任务也用。
+    """
+    platform = params.get("judge_platform")
+    base_url_param = params.get("judge_base_url")
+    if not platform and not base_url_param:
+        return cfg  # 未传任何 judge 配置，保持 yaml 原样（向后兼容）
+    judge = dict(cfg.get("judge", {}) or {})
+    # 平台→base_url 映射；custom 用显式 base_url
+    if platform == "custom" and base_url_param:
+        judge["base_url"] = base_url_param.rstrip("/")
+    elif platform:
+        judge["base_url"] = _PLATFORM_BASE_URLS.get(platform, "")
+    elif base_url_param:
+        judge["base_url"] = base_url_param.rstrip("/")
+    # 模型名
+    model = params.get("judge_model")
+    if model:
+        judge["model"] = model
+    # API Key：写入 .env 长期保存 + 设到 cfg 让本次任务也用
+    api_key = params.get("judge_api_key")
+    if api_key:
+        env_name = _persist_judge_key_to_env(platform or "custom", api_key)
+        judge["api_key"] = api_key         # 本次任务直接用
+        judge["api_key_env"] = env_name    # 让 judge.py 后续走 env 回退
+    # 火山方舟 /models 接口语义不同，关掉 probe 避免误判不可用
+    if platform == "volcengine":
+        judge.setdefault("probe", False)
+    return {**cfg, "judge": judge}

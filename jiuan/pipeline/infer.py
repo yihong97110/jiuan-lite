@@ -1,4 +1,4 @@
-﻿"""推：推理并做 token 计量（对标久安「计量计费」埋点）。"""
+"""推：推理并做 token 计量（对标久安「计量计费」埋点）。"""
 from __future__ import annotations
 
 import json
@@ -53,6 +53,21 @@ def _estimate_tokens(text: str) -> int:
     return max(1, cjk + non_cjk)
 
 
+def clear_gpu_cache():
+    """清理推理模型缓存和 GPU 显存。
+
+    在自动化迭代中，每轮训练/评测后调用此函数，
+    确保上一轮的模型从 GPU 释放，避免下一轮 OOM。
+    """
+    global _REAL_CACHE
+    _REAL_CACHE = {}
+    import gc, torch
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
+
+
 def _mock_generate(model_dir: Optional[Path], prompt: str, log: Callable) -> str:
     if model_dir and (model_dir / "memory.json").exists():
         memory = json.loads((model_dir / "memory.json").read_text(encoding="utf-8"))
@@ -85,6 +100,11 @@ def _load_real(model_dir: Optional[Path], cfg: dict, log: Callable):
     key = str(model_dir or "base")
     if key not in _REAL_CACHE:
         import torch
+
+        # 加载新模型前，先清理 GPU 缓存（避免上一轮训练/推理的残留显存导致 OOM）
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
 
         base = model_path(cfg)
         if model_dir and (model_dir / "meta.json").exists():

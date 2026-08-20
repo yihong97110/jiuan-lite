@@ -68,6 +68,7 @@
   <button data-tab="agent" onclick="switchTab('agent')">⑧ Agent · 自动迭代</button>
   <button data-tab="custom" onclick="switchTab('custom')">⑨ 通用训练 Agent</button>
   <button data-tab="chat" onclick="switchTab('chat')">⑩ 对话 · LangChain Agent</button>
+  <button data-tab="local-agent" onclick="switchTab('local-agent')">⑪ 本地Agent · ReAct</button>
 </nav>
 
 <main>
@@ -95,33 +96,64 @@
       <div id="dp-out" class="out"></div>
     </div>
     <div class="card"><h2>标 · 任务</h2><div id="tbl-dataprep"></div></div>
+    <div class="card">
+      <h2>标 · 蒸馏生成</h2>
+      <p class="desc">调用外部大模型API，自动生成50条多类型问答对（概念解释/原理机制/流程步骤/案例分析等10类×5条），直接保存为可训练数据集。</p>
+      <div class="row">
+        <div class="fld"><label>平台</label>
+          <select id="dl-platform" onchange="dlPlatformChange()">
+            <option value="deepseek">DeepSeek</option>
+            <option value="openai">OpenAI</option>
+            <option value="volcengine">火山方舟</option>
+            <option value="custom">自定义</option>
+          </select></div>
+        <div class="fld"><label>模型名称</label>
+          <input id="dl-model" size="24" value="deepseek-chat" placeholder="如 deepseek-chat / gpt-4o-mini"></div>
+        <div class="fld"><label>API Key</label>
+          <input id="dl-apikey" type="password" size="32" placeholder="输入API Key"></div>
+        <div class="fld" id="dl-baseurl-wrap" style="display:none"><label>自定义API端点</label>
+          <input id="dl-baseurl" size="32" placeholder="https://api.example.com/v1"></div>
+        <div class="fld"><label>领域描述</label>
+          <input id="dl-domain" size="20" value="应急管理" placeholder="如：应急管理/生物学/法律"></div>
+        <div class="fld"><label>数据集名称</label>
+          <input id="dl-name" size="16" value="distill" placeholder="数据集前缀名"></div>
+        <button class="go" onclick="submitDistill()">开始蒸馏</button>
+      </div>
+      <div id="dl-out" class="out"></div>
+    </div>
+    <div class="card"><h2>蒸馏 · 任务</h2><div id="tbl-distill"></div></div>
   </section>
 
   <!-- ② 训 -->
   <section id="page-train" class="page">
     <div class="card">
       <h2>② 训 · SFT / LoRA 训练</h2>
-      <p class="desc">选择数据集与后端；device 可选 CPU / GPU（本机无 GPU 时 cuda 会自动回退 CPU 并告警）。</p>
+      <p class="desc">选择基座模型与数据集，默认用 LLaMA-Factory + LoRA 在 GPU 上训练；device 选 cuda（本机无 GPU 时自动回退 CPU 并告警）。</p>
       <div class="row">
+        <div class="fld"><label>基座模型</label>
+          <select id="tr-base-model" onchange="onBaseModelChange()">
+            <option value="7b" selected>Qwen2.5-7B-Instruct</option>
+            <option value="0.5b">Qwen2.5-0.5B-Instruct</option>
+          </select></div>
         <div class="fld"><label>dataset_id</label>
           <select id="tr-dataset" style="min-width:220px"></select></div>
         <div class="fld"><label>后端 backend</label>
-          <select id="tr-backend"><option value="auto">auto</option><option value="hf">hf (transformers)</option><option value="llamafactory">llamafactory</option><option value="mock">mock</option></select></div>
+          <select id="tr-backend"><option value="llamafactory" selected>llamafactory</option><option value="hf">hf (transformers)</option><option value="auto">auto</option><option value="mock">mock</option></select></div>
         <div class="fld"><label>方法 method</label>
-          <select id="tr-method"><option value="">config 默认</option><option value="lora">lora</option><option value="full">full</option></select></div>
+          <select id="tr-method"><option value="lora" selected>lora</option><option value="full">full</option></select></div>
         <div class="fld"><label>设备 device</label>
-          <select id="tr-device"><option value="auto">auto</option><option value="cpu">cpu</option><option value="cuda">cuda (GPU)</option></select></div>
-        <div class="fld"><label>epochs</label><input id="tr-epochs" type="number" placeholder="默认" style="width:80px"></div>
-        <div class="fld"><label>模型名</label><input id="tr-name" size="14" value="qwen0.5b-sft"></div>
-        <div class="fld"><label>学习率 lr</label><input id="tr-lr" type="number" step="0.00001" placeholder="默认" style="width:100px"></div>
-        <div class="fld"><label>batch_size</label><input id="tr-bs" type="number" min="1" placeholder="默认" style="width:90px"></div>
-        <div class="fld"><label>grad_accum</label><input id="tr-ga" type="number" min="1" placeholder="默认" style="width:90px"></div>
-        <div class="fld"><label>max_seq_len</label><input id="tr-msl" type="number" min="16" placeholder="默认" style="width:100px"></div>
+          <select id="tr-device"><option value="cuda" selected>cuda (GPU)</option><option value="auto">auto</option><option value="cpu">cpu</option></select></div>
+        <div class="fld"><label>epochs</label><input id="tr-epochs" type="number" value="10" style="width:80px"></div>
+        <div class="fld"><label>模型名</label><input id="tr-name" size="14" value="qwen7b-sft" placeholder="模型ID前缀"></div>
+        <div class="fld"><label>学习率 lr</label><input id="tr-lr" type="number" step="0.00001" value="0.0002" style="width:100px"></div>
+        <div class="fld"><label>batch_size</label><input id="tr-bs" type="number" min="1" value="1" style="width:90px"></div>
+        <div class="fld"><label>grad_accum</label><input id="tr-ga" type="number" min="1" value="1" style="width:90px"></div>
+        <div class="fld"><label>max_seq_len</label><input id="tr-msl" type="number" min="16" value="1024" style="width:100px"></div>
         <div class="fld"><label>精度 precision</label>
-          <select id="tr-prec"><option value="">config 默认</option><option value="auto">auto</option><option value="fp32">fp32</option><option value="fp16">fp16</option><option value="bf16">bf16</option></select></div>
-        <div class="fld"><label>lora_r</label><input id="tr-lr-r" type="number" min="1" placeholder="默认" style="width:80px"></div>
-        <div class="fld"><label>lora_alpha</label><input id="tr-lr-a" type="number" min="1" placeholder="默认" style="width:90px"></div>
-        <div class="fld"><label>lora_dropout</label><input id="tr-lr-d" type="number" step="0.01" min="0" max="0.9" placeholder="默认" style="width:100px"></div>
+          <select id="tr-prec"><option value="bf16" selected>bf16</option><option value="auto">auto</option><option value="fp32">fp32</option><option value="fp16">fp16</option></select></div>
+        <div class="fld"><label>lora_r</label><input id="tr-lr-r" type="number" min="1" value="8" style="width:80px"></div>
+        <div class="fld"><label>lora_alpha</label><input id="tr-lr-a" type="number" min="1" value="16" style="width:90px"></div>
+        <div class="fld"><label>lora_dropout</label><input id="tr-lr-d" type="number" step="0.01" min="0" max="0.9" value="0.05" style="width:100px"></div>
         <button class="go" onclick="submitTrain()">开始训练</button>
         <button class="go ghost" onclick="refreshDatasets()">刷新数据集</button>
       </div>
@@ -170,12 +202,31 @@
         <div class="fld"><label>split</label>
           <select id="ev-split"><option value="valid">valid</option><option value="train">train</option></select></div>
         <div class="fld"><label>LLM-as-Judge</label>
-          <select id="ev-judge"><option value="auto">auto</option><option value="true">开启</option><option value="false">关闭</option></select></div>
+          <select id="ev-judge" onchange="evJudgeChange()"><option value="true" selected>开启（用Judge评分）</option><option value="auto">auto（用config）</option><option value="false">关闭</option></select></div>
         <div class="fld"><label>对比基线</label>
-          <select id="ev-baseline"><option value="">不对比</option><option value="base">base（原始模型）</option></select></div>
+          <select id="ev-baseline"><option value="">不对比</option><option value="base">base（原始模型）</option><option value="qwen2.5-7b-base">qwen2.5-7b-base</option></select></div>
         <div class="fld"><label>max_samples</label><input id="ev-max" type="number" min="1" placeholder="默认" style="width:100px"></div>
         <button class="go" onclick="submitEval()">开始评测</button>
         <button class="go ghost" onclick="refreshDatasets();refreshModels()">刷新</button>
+      </div>
+      <!-- judge 动态配置区：默认显示（judge默认开启），对标蒸馏卡片 -->
+      <div id="ev-judge-cfg" style="flex-basis:100%;margin-top:8px;padding:10px;border:1px dashed #334155;border-radius:6px;background:#0f172a">
+        <div class="row" style="flex-wrap:wrap">
+          <div class="fld"><label>裁判平台</label>
+            <select id="ev-judge-platform" onchange="evJudgePlatformChange()">
+              <option value="deepseek">DeepSeek</option>
+              <option value="openai">OpenAI</option>
+              <option value="volcengine">火山方舟</option>
+              <option value="custom">自定义</option>
+            </select></div>
+          <div class="fld"><label>裁判模型名</label>
+            <input id="ev-judge-model" size="24" value="deepseek-v4-flash" placeholder="如 deepseek-v4-flash / gpt-4o-mini"></div>
+          <div class="fld"><label>裁判 API Key</label>
+            <input id="ev-judge-apikey" type="password" size="32" placeholder="留空用上次保存的Key"></div>
+          <div class="fld" id="ev-judge-baseurl-wrap" style="display:none"><label>自定义端点 base_url</label>
+            <input id="ev-judge-baseurl" size="32" placeholder="https://api.example.com/v1"></div>
+        </div>
+        <div style="color:#94a3b8;font-size:12px;margin-top:4px">提示：Judge 默认开启。API Key 已存 .env，留空即可直接评测。切换平台/模型请重新填写。</div>
       </div>
       <div id="ev-out" class="out"></div>
     </div>
@@ -420,8 +471,10 @@
   <section id="page-chat" class="page">
     <div class="card">
       <h2>LangChain Agent 对话</h2>
-      <p class="desc">基于 LangChain create_tool_calling_agent 构建，对接 DeepSeek 大模型，支持 RAG 检索/模型查询/血缘追踪 三个工具调用、滑动窗口记忆与 SSE 流式输出。</p>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+      <p class="desc">基于 LangChain create_tool_calling_agent 构建，对接 vLLM/DeepSeek 大模型，支持 RAG 检索/模型查询/血缘追踪/联网搜索/评测报告/任务状态 六个工具调用、滑动窗口记忆与 SSE 流式输出。</p>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+        <label style="font-size:13px;">使用模型:</label>
+        <select id="chat-model" style="min-width:280px;"><option value="">-- DeepSeek (默认) --</option></select>
         <button onclick="createSession()" class="btn">创建会话</button>
         <select id="chat-session" style="min-width:200px;"><option value="">-- 选择会话 --</option></select>
         <button onclick="loadSessions()" class="btn" style="background:#6c757d;">刷新</button>
@@ -436,6 +489,31 @@
         <input id="chat-input" size="50" placeholder="输入问题，如：帮我搜索应急预案的知识 / 平台有多少已训练模型？" onkeydown="if(event.key==='Enter')sendChat()">
         <button onclick="sendChat()" class="btn">发送</button>
         <button onclick="sendChatStream()" class="btn" style="background:#28a745;">流式发送</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑪ 本地Agent -->
+  <section id="page-local-agent" class="page">
+    <div class="card">
+      <h2>本地 ReAct Agent（自训练模型）</h2>
+      <p class="desc">使用自己训练的模型 + ReAct 文本模式实现工具调用，不依赖任何外部 API。支持 RAG 检索/模型查询/血缘追踪/评测报告 四个工具。</p>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+        <label style="font-size:13px;">选择模型:</label>
+        <select id="la-model" style="min-width:280px;"><option value="">-- 使用最新模型 --</option></select>
+        <button onclick="laCreateSession()" class="btn">创建会话</button>
+        <select id="la-session" style="min-width:200px;"><option value="">-- 选择会话 --</option></select>
+        <button onclick="laLoadSessions()" class="btn" style="background:#6c757d;">刷新</button>
+        <span id="la-status" style="font-size:12px;color:#888;"></span>
+      </div>
+    </div>
+    <div class="card">
+      <div id="la-messages" style="height:320px;overflow-y:auto;border:1px solid #ddd;border-radius:6px;padding:12px;background:#fafafa;margin-bottom:10px;">
+        <p style="color:#999;text-align:center;">选择训练好的模型，创建会话后开始对话。</p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input id="la-input" size="50" placeholder="输入问题，如：搜索应急预案 / 列出已训练模型" onkeydown="if(event.key==='Enter')laSendChat()">
+        <button onclick="laSendChat()" class="btn">发送</button>
       </div>
     </div>
   </section>
@@ -466,6 +544,8 @@ function switchTab(tab){
   else if(tab==="agent"){ refreshDatasets(); agentStatus(); }
   else if(tab==="custom"){ customAgentStatus(); }
   else if(tab==="eval"){ loadTasks(tab); loadBreadthReports(); }
+  else if(tab==="chat"){ loadChatModels(); loadSessions(); }
+  else if(tab==="local-agent"){ laLoadModels(); laLoadSessions(); }
   else { loadTasks(tab); }
 }
 function initialTabFromUrl(){
@@ -563,7 +643,7 @@ async function refreshDatasets(){
 async function refreshModels(){
   const models = await (await fetch("/models")).json();
   const ids = [...new Set((models||[]).filter(m=>m.type!=="eval"&&m.model_id).map(m=>m.model_id))];
-  const opts = `<option value="base">base（原始 Qwen2.5-0.5B）</option>` +
+  const opts = `<option value="base">base（原始基底模型）</option>` +
     ids.map(i=>`<option value="${i}">${i}</option>`).join("");
   for(const sel of [document.getElementById("if-model"), document.getElementById("ev-model"), document.getElementById("rag-model")]){
     if(!sel) continue;
@@ -572,7 +652,7 @@ async function refreshModels(){
   const bsel = document.getElementById("ev-baseline");
   if(bsel){
     const curb = bsel.value;
-    bsel.innerHTML = `<option value="">不对比</option><option value="base">base（原始模型）</option>` +
+    bsel.innerHTML = `<option value="">不对比</option><option value="base">base（原始基底模型）</option>` +
       ids.map(i=>`<option value="${i}">${i}</option>`).join("");
     bsel.value = curb;
   }
@@ -632,15 +712,44 @@ async function showTaskDetail(taskId){
     const t=await (await fetch("/tasks/"+encodeURIComponent(taskId))).json();
     if(t.detail){ body.innerHTML="加载失败："+esc(JSON.stringify(t.detail)); return; }
     const logs=(t.logs||[]).map(l=>esc(l)).join("\n")||"（无日志）";
-    body.innerHTML=
+    let html=
       `<div class="kv">id：<b>${esc(t.id)}</b></div>`+
       `<div class="kv">阶段：<b>${esc(t.stage)}</b>　状态：<b class="s-${t.status}">${esc(t.status)}</b>`+
         `${t.progress?("　进度："+esc(t.progress)):""}</div>`+
       `<div class="kv">创建：<b>${fmtTime(t.created_at)}</b>　更新：<b>${fmtTime(t.updated_at)}</b></div>`+
-      (t.error?`<div class="kv">错误：<b style="color:#f87171">${esc(t.error)}</b></div>`:"")+
-      `<h3 style="margin-top:14px">参数 params</h3><pre>${esc(JSON.stringify(t.params,null,2))}</pre>`+
-      `<h3>结果 result</h3><pre>${esc(JSON.stringify(t.result,null,2))}</pre>`+
-      `<h3>日志 logs（${(t.logs||[]).length} 条）</h3><pre>${logs}</pre>`;
+      (t.error?`<div class="kv">错误：<b style="color:#f87171">${esc(t.error)}</b></div>`:"");
+
+    // 蒸馏任务：展示生成的QA内容
+    if(t.stage==="distill" && t.result && t.result.samples){
+      const samples=t.result.samples;
+      const stats=t.result.type_stats||{};
+      html+=`<h3 style="margin-top:14px">蒸馏结果</h3>`;
+      html+=`<div class="kv">数据集ID：<b>${esc(t.result.dataset_id||"-")}</b></div>`;
+      html+=`<div class="kv">总计：${t.result.total_count||0} 条（train ${t.result.train_count||0} / valid ${t.result.valid_count||0}）</div>`;
+      html+=`<div class="kv">路径：<code>${esc(t.result.dataset_path||"-")}</code></div>`;
+      // 类型统计
+      html+=`<div style="margin:8px 0">`;
+      for(const[k,v]of Object.entries(stats)){ html+=`<span style="display:inline-block;margin:2px 6px;padding:2px 8px;background:#1e293b;border-radius:4px">${esc(k)}: ${v}</span>`; }
+      html+=`</div>`;
+      // QA列表
+      html+=`<h3>生成的问答对（${samples.length} 条）</h3>`;
+      html+=`<div style="max-height:500px;overflow-y:auto">`;
+      samples.forEach((s,i)=>{
+        html+=`<div style="margin:8px 0;padding:8px;border:1px solid #334155;border-radius:6px">`;
+        html+=`<div style="font-size:12px;color:#94a3b8;margin-bottom:4px">#${i+1} [${esc(s.type||"-")}]</div>`;
+        html+=`<div style="margin:4px 0"><b style="color:#60a5fa">Q:</b> ${esc(s.question||"")}</div>`;
+        html+=`<div style="margin:4px 0"><b style="color:#34d399">A:</b> ${esc(s.answer||"")}</div>`;
+        html+=`</div>`;
+      });
+      html+=`</div>`;
+    }
+
+    html+=`<h3 style="margin-top:14px">参数 params</h3><pre>${esc(JSON.stringify(t.params,null,2))}</pre>`;
+    if(t.stage!=="distill" || !t.result || !t.result.samples){
+      html+=`<h3>结果 result</h3><pre>${esc(JSON.stringify(t.result,null,2))}</pre>`;
+    }
+    html+=`<h3>日志 logs（${(t.logs||[]).length} 条）</h3><pre>${logs}</pre>`;
+    body.innerHTML=html;
   }catch(e){ body.innerHTML="加载失败："+esc(e); }
 }
 function closeTaskModal(){ document.getElementById("task-modal").classList.remove("open"); }
@@ -676,6 +785,65 @@ async function submitDataprep(){
   document.getElementById("dp-out").textContent = "已提交任务 "+res.task_id;
   setTimeout(()=>{loadTasks("dataprep");refreshDatasets();},600);
 }
+
+function dlPlatformChange(){
+  const p = document.getElementById("dl-platform").value;
+  const wrap = document.getElementById("dl-baseurl-wrap");
+  const model = document.getElementById("dl-model");
+  if(p==="custom"){ wrap.style.display=""; }
+  else{ wrap.style.display="none"; }
+  if(p==="deepseek" && !model.value){ model.value="deepseek-chat"; }
+  if(p==="openai" && !model.value){ model.value="gpt-4o-mini"; }
+  if(p==="volcengine" && !model.value){ model.value="deepseek-v4-flash"; }
+}
+
+async function submitDistill(){
+  const apiKey = document.getElementById("dl-apikey").value.trim();
+  if(!apiKey){
+    document.getElementById("dl-out").textContent = "请输入API Key";
+    return;
+  }
+  const platform = document.getElementById("dl-platform").value;
+  const body = {
+    platform: platform,
+    model: document.getElementById("dl-model").value.trim(),
+    api_key: apiKey,
+    domain: document.getElementById("dl-domain").value.trim() || "通用知识",
+    name: document.getElementById("dl-name").value.trim() || "distill",
+  };
+  if(platform==="custom"){
+    body.base_url = document.getElementById("dl-baseurl").value.trim();
+  }
+  document.getElementById("dl-out").textContent = "蒸馏中…（调用API生成50条问答对，约1-2分钟）";
+  const res = await post("/distill", body);
+  document.getElementById("dl-out").textContent = "已提交蒸馏任务 "+res.task_id+"，正在后台生成…";
+  // 自动刷新蒸馏任务进度
+  let pollCount=0;
+  const pollDistill=setInterval(async()=>{
+    pollCount++;
+    loadTasks("distill");
+    // 检查任务状态
+    try{
+      const t=await(await fetch("/tasks/"+encodeURIComponent(res.task_id))).json();
+      if(t.status==="succeeded"){
+        clearInterval(pollDistill);
+        document.getElementById("dl-out").textContent="✅ 蒸馏完成！共"+(t.result?.total_count||0)+"条，点击任务查看详情";
+        refreshDatasets();
+        // 自动打开任务详情
+        showTaskDetail(res.task_id);
+      }else if(t.status==="failed"){
+        clearInterval(pollDistill);
+        document.getElementById("dl-out").textContent="❌ 蒸馏失败："+(t.error||"").slice(0,100);
+        showTaskDetail(res.task_id);
+      }else if(t.logs&&t.logs.length>0){
+        // 实时显示最新日志
+        const lastLog=t.logs[t.logs.length-1];
+        document.getElementById("dl-out").textContent="⏳ "+lastLog;
+      }
+    }catch(e){}
+    if(pollCount>120){ clearInterval(pollDistill); } // 超时保护
+  }, 2000);
+}
 async function submitTrain(){
   const ds = document.getElementById("tr-dataset").value;
   if(!ds){ document.getElementById("tr-out").textContent="请先在①标准备数据集"; return; }
@@ -684,6 +852,7 @@ async function submitTrain(){
     dataset_id:ds,
     backend:document.getElementById("tr-backend").value,
     method:document.getElementById("tr-method").value||null,
+    base_model:document.getElementById("tr-base-model").value,
     device:document.getElementById("tr-device").value,
     epochs:num(document.getElementById("tr-epochs").value),
     precision:document.getElementById("tr-prec").value||null,
@@ -698,6 +867,16 @@ async function submitTrain(){
   document.getElementById("tr-out").textContent = "已提交训练任务 "+res.task_id+"（可在下方任务列表看状态）";
   setTimeout(()=>{loadTasks("train");refreshModels();},600);
 }
+function onBaseModelChange(){
+  const bm = document.getElementById("tr-base-model").value;
+  const nameEl = document.getElementById("tr-name");
+  // 切换基座时自动更新模型名前缀（仅当用户未自定义时）
+  if(bm === "7b" && (nameEl.value === "qwen0.5b-sft" || nameEl.value === "qwen7b-sft")){
+    nameEl.value = "qwen7b-sft";
+  } else if(bm === "0.5b" && (nameEl.value === "qwen0.5b-sft" || nameEl.value === "qwen7b-sft")){
+    nameEl.value = "qwen0.5b-sft";
+  }
+}
 async function submitInfer(){
   document.getElementById("if-out").textContent = "生成中…";
   const res = await post("/infer",{
@@ -711,17 +890,51 @@ async function submitInfer(){
   document.getElementById("if-out").textContent = "已提交任务 "+res.task_id;
   setTimeout(()=>loadTasks("infer"),600);
 }
+function evJudgeChange(){
+  const v = document.getElementById("ev-judge").value;
+  document.getElementById("ev-judge-cfg").style.display = (v === "true") ? "" : "none";
+}
+function evJudgePlatformChange(){
+  const p = document.getElementById("ev-judge-platform").value;
+  const wrap = document.getElementById("ev-judge-baseurl-wrap");
+  const model = document.getElementById("ev-judge-model");
+  wrap.style.display = (p === "custom") ? "" : "none";
+  if(!model.value){
+    if(p === "deepseek") model.value = "deepseek-v4-flash";
+    else if(p === "openai") model.value = "gpt-4o-mini";
+    else if(p === "volcengine") model.value = "deepseek-v4-flash";
+  }
+}
 async function submitEval(){
   const ds = document.getElementById("ev-dataset").value;
   if(!ds){ document.getElementById("ev-out").textContent="请先在①标准备数据集"; return; }
-  document.getElementById("ev-out").textContent = "评测中…";
-  const res = await post("/eval",{
+  const judgeVal = document.getElementById("ev-judge").value;
+  const body = {
     model_id:document.getElementById("ev-model").value||"base",
     dataset_id:ds,
     split:document.getElementById("ev-split").value,
-    use_judge:document.getElementById("ev-judge").value,
+    use_judge:judgeVal,
     max_samples:num(document.getElementById("ev-max").value),
-    baseline:document.getElementById("ev-baseline").value||null});
+    baseline:document.getElementById("ev-baseline").value||null,
+  };
+  // 开启 judge 时收集前端填写的裁判配置，并做基础校验
+  if(judgeVal === "true"){
+    const platform = document.getElementById("ev-judge-platform").value;
+    const model = document.getElementById("ev-judge-model").value.trim();
+    const apiKey = document.getElementById("ev-judge-apikey").value.trim();
+    const baseUrl = document.getElementById("ev-judge-baseurl").value.trim();
+    if(!model){ document.getElementById("ev-out").textContent="请填写裁判模型名"; return; }
+    if(platform === "custom" && !baseUrl){ document.getElementById("ev-out").textContent="custom 平台需填写端点 base_url"; return; }
+    body.judge_platform = platform;
+    body.judge_model = model;
+    if(apiKey){
+      body.judge_api_key = apiKey;
+      localStorage.setItem("judge_key_saved","1");  // 标记已存过Key，后续可留空
+    }
+    if(platform === "custom"){ body.judge_base_url = baseUrl; }
+  }
+  document.getElementById("ev-out").textContent = "评测中…";
+  const res = await post("/eval", body);
   document.getElementById("ev-out").textContent = "已提交评测任务 "+res.task_id+"（完成后此处显示结果/对比）";
   setTimeout(()=>loadTasks("eval"),600);
   pollEval(res.task_id);
@@ -774,6 +987,19 @@ function renderEvalResult(r){
   const d=r.delta||{};
   const gaps=r.gaps||[];
 
+  // judge 开启但失败/不可用时，置顶展示错误（如 API Key 错误、端点不可达）
+  let html="";
+  if(r.judge_enabled && r.judge_status==="failed"){
+    const err=(r.judge_error||"未知错误");
+    html+=`<div style="background:#451a03;border:1px solid #f97316;color:#fbbf24;padding:8px 12px;border-radius:6px;margin-bottom:10px">`
+      + `<b>⚠ LLM-as-Judge 评分失败</b>（已回退 ROUGE/BLEU）：<span style="font-size:13px">${esc(err.slice(0,200))}</span>`
+      + `</div>`;
+  } else if(r.judge_enabled && r.judge_status==="unavailable"){
+    html+=`<div style="background:#1e293b;border:1px solid #475569;color:#94a3b8;padding:8px 12px;border-radius:6px;margin-bottom:10px">`
+      + `Judge 配置不可用（base_url/Key 缺失或服务未响应），仅展示 ROUGE/BLEU。`
+      + `</div>`;
+  }
+
   function bar(label,val,max,color){
     if(val===null||val===undefined||isNaN(val)) return "";
     const pct=Math.round((val/max)*100);
@@ -795,7 +1021,7 @@ function renderEvalResult(r){
     return `<span style="color:${color};font-size:12px;margin-left:4px">${arrow} ${Math.abs(v).toFixed(2)}</span>`;
   }
 
-  let html=`<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px">`;
+  html+=`<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px">`;
 
   // 左列：基础指标
   html+=`<div style="min-width:300px">
@@ -870,16 +1096,58 @@ function judgeStatusText(r){
 function renderComparison(r){
   const c = r.comparison;
   let html = `<b>对比结果</b>：目标 <code>${c.target_model}</code> vs 基线 <code>${c.baseline_model}</code>（样本 ${r.samples}）<br>`;
-  html += `<table style="margin-top:8px"><thead><tr><th>指标</th><th>基线</th><th>目标</th><th>Δ</th><th>提升%</th></tr></thead><tbody>`;
-  const label = {rouge_l_f:"ROUGE-L", bleu_1:"BLEU-1", bleu_2:"BLEU-2", judge_avg:"LLM裁判(0-5)"};
-  for(const m of c.metrics){
+  // 判断 judge 是否真的有数值（至少一个 judge 指标非0/null）
+  const hasJudge = c.metrics.some(m => m.metric.startsWith("judge_") && m.target !== 0);
+  if(!hasJudge){
+    html += `<div style="background:#451a03;border:1px solid #f97316;color:#fbbf24;padding:8px 12px;border-radius:6px;margin:8px 0">⚠ Judge 未评分（目标或基线无 Judge 分数）。请确认两个模型评测时 Judge 都成功执行。</div>`;
+  }
+  html += `<table style="margin-top:8px;width:100%;border-collapse:collapse">`;
+  html += `<thead><tr style="background:#1e293b"><th style="text-align:left;padding:6px">指标</th><th>基线</th><th>目标</th><th>Δ</th><th>提升%</th></tr></thead><tbody>`;
+  // 指标中文名 + 类型（pct=百分制0-100，rate=比例0-1，float=小数）
+  const label = {
+    rouge_l_f:["ROUGE-L","float"], bleu_1:["BLEU-1","float"], bleu_2:["BLEU-2","float"],
+    judge_accuracy:["Judge 准确性","pct"], judge_completeness:["Judge 完整性","pct"],
+    judge_relevance:["Judge 相关性","pct"], judge_overall:["Judge 综合分","pct"],
+    bad_case_rate:["Bad Case 率","rate"], hallucination_rate:["幻觉率","rate"],
+  };
+  // 分组渲染：基础指标 / Judge 指标
+  const basicKeys = ["rouge_l_f","bleu_1","bleu_2"];
+  const judgeKeys = ["judge_accuracy","judge_completeness","judge_relevance","judge_overall","bad_case_rate","hallucination_rate"];
+  const byMetric = {};
+  for(const m of c.metrics){ byMetric[m.metric] = m; }
+  function fmtVal(metric, v){
+    const meta = label[metric] || [metric,"float"];
+    if(meta[1]==="pct") return v===0&&byMetric[metric]===undefined?"—":v.toFixed(1);
+    if(meta[1]==="rate") return (v*100).toFixed(1)+"%";
+    return v.toFixed(4);
+  }
+  function renderRow(metric){
+    const m = byMetric[metric];
+    if(!m) return "";
+    const meta = label[metric] || [metric,"float"];
     const up = m.delta>0, down = m.delta<0;
-    const color = up?"#4ade80":(down?"#f87171":"#94a3b8");
+    // bad_case_rate/hallucination_rate 越低越好，下降是好事
+    const lowerBetter = (metric==="bad_case_rate"||metric==="hallucination_rate");
+    const good = lowerBetter ? down : up;
+    const color = m.delta===0?"#94a3b8":(good?"#4ade80":"#f87171");
     const pct = m.delta_pct===null?"-":(m.delta_pct>0?"+":"")+m.delta_pct+"%";
-    html += `<tr><td>${label[m.metric]||m.metric}</td><td>${m.baseline}</td><td>${m.target}</td>`+
-      `<td style="color:${color}">${m.delta>0?"+":""}${m.delta}</td><td style="color:${color}">${pct}</td></tr>`;
+    return `<tr style="border-bottom:1px solid #334155"><td style="padding:6px">${meta[0]}</td>`+
+      `<td style="text-align:center">${fmtVal(metric,m.baseline)}</td>`+
+      `<td style="text-align:center">${fmtVal(metric,m.target)}</td>`+
+      `<td style="text-align:center;color:${color}">${m.delta>0?"+":""}${fmtVal(metric,m.delta)}</td>`+
+      `<td style="text-align:center;color:${color}">${pct}</td></tr>`;
+  }
+  // 基础指标组
+  html += `<tr style="background:#0f172a"><td colspan="5" style="padding:4px 6px;color:#60a5fa;font-size:13px">📊 基础指标（文本相似度）</td></tr>`;
+  for(const k of basicKeys){ html += renderRow(k); }
+  // Judge 指标组
+  if(hasJudge){
+    html += `<tr style="background:#0f172a"><td colspan="5" style="padding:4px 6px;color:#a78bfa;font-size:13px">🧑‍⚖️ LLM-as-Judge 评分（0-100分）</td></tr>`;
+    for(const k of judgeKeys){ html += renderRow(k); }
   }
   html += `</tbody></table>`;
+  // 说明
+  html += `<div style="color:#94a3b8;font-size:12px;margin-top:8px">说明：绿色=提升，红色=下降。Bad Case 率/幻觉率越低越好（下降为绿色）。Judge 分数越高越好。</div>`;
   document.getElementById("ev-out").innerHTML = html;
 }
 
@@ -1734,6 +2002,21 @@ setInterval(()=>{
 
 /* ===== ⑩ 对话 ===== */
 let chatSessionId = null;
+async function loadChatModels(){
+  const sel = document.getElementById("chat-model");
+  if(!sel) return;
+  sel.innerHTML = '<option value="">-- DeepSeek (默认) --</option>';
+  try{
+    const res = await fetch("/models");
+    const models = await res.json();
+    for(const m of (models||[])){
+      const opt = document.createElement("option");
+      opt.value = m.model_id;
+      opt.textContent = `${m.name || m.model_id} (${m.backend || 'hf'})`;
+      sel.appendChild(opt);
+    }
+  }catch(e){ console.log("加载模型列表失败", e); }
+}
 function chatAppend(role, text, isTool){
   const box = document.getElementById("chat-messages");
   if(box.querySelector("p[style*='999']")) box.innerHTML="";
@@ -1747,11 +2030,16 @@ function chatAppend(role, text, isTool){
   box.scrollTop = box.scrollHeight;
 }
 async function createSession(){
-  const res = await fetch("/chat/session", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({memory_window:10})});
+  const modelSel = document.getElementById("chat-model");
+  const modelId = modelSel ? modelSel.value : "";
+  const body = {memory_window:10};
+  if(modelId) body.model_id = modelId;
+  const res = await fetch("/chat/session", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
   const d = await res.json();
   if(d.session_id){
     chatSessionId = d.session_id;
-    document.getElementById("chat-status").textContent = "会话已创建：" + d.session_id.slice(0,8);
+    const modelLabel = modelId ? ` | 模型: ${modelId.slice(0,20)}` : " | DeepSeek";
+    document.getElementById("chat-status").textContent = "会话已创建：" + d.session_id.slice(0,8) + modelLabel;
     loadSessions();
     document.getElementById("chat-messages").innerHTML = `<p style="color:#999;text-align:center;">会话已创建，输入问题开始对话。</p>`;
   }
@@ -1844,6 +2132,94 @@ async function sendChatStream(){
     }
   }
   document.getElementById("chat-status").textContent = "完成";
+}
+
+/* ===== ⑪ 本地 ReAct Agent ===== */
+let laSessionId = null;
+async function laLoadModels(){
+  const sel = document.getElementById("la-model");
+  if(!sel) return;
+  sel.innerHTML = '<option value="">-- 使用最新模型 --</option>';
+  try{
+    const res = await fetch("/models");
+    const models = await res.json();
+    const seen = new Set();
+    for(const m of (models||[])){
+      const mid = m.model_id || "";
+      if(seen.has(mid)) continue;
+      seen.add(mid);
+      const opt = document.createElement("option");
+      opt.value = mid;
+      opt.textContent = `${mid} (${m.backend||'hf'})`;
+      sel.appendChild(opt);
+    }
+  }catch(e){ console.log("加载模型列表失败", e); }
+}
+function laAppend(role, text, isTool){
+  const box = document.getElementById("la-messages");
+  const bg = role==="user" ? "#e3f2fd" : isTool ? "#fff3e0" : "#f1f8e9";
+  const color = role==="user" ? "#1565c0" : isTool ? "#e65100" : "#2e7d32";
+  const label = role==="user" ? "我" : isTool ? "工具" : "Agent";
+  const div = document.createElement("div");
+  div.style.cssText = `margin:6px 0;padding:8px 12px;border-radius:8px;background:${bg};color:${color};`;
+  div.innerHTML = `<b>${label}：</b>${esc(text).replace(/\n/g,"<br>")}`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+async function laCreateSession(){
+  const modelSel = document.getElementById("la-model");
+  const modelId = modelSel ? modelSel.value : "";
+  const body = {memory_window:5};
+  if(modelId) body.model_id = modelId;
+  document.getElementById("la-status").textContent = "创建中...";
+  try{
+    const res = await fetch("/local_agent/session", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+    const d = await res.json();
+    if(d.session_id){
+      laSessionId = d.session_id;
+      const mLabel = d.model_id ? ` | 模型: ${d.model_id.slice(0,25)}` : "";
+      document.getElementById("la-status").textContent = "会话已创建：" + d.session_id.slice(0,8) + mLabel;
+      laLoadSessions();
+      document.getElementById("la-messages").innerHTML = `<p style="color:#999;text-align:center;">会话已创建，输入问题开始对话。</p>`;
+    }
+  }catch(e){ document.getElementById("la-status").textContent = "错误: "+e.message; }
+}
+async function laLoadSessions(){
+  try{
+    const res = await fetch("/local_agent/sessions");
+    const d = await res.json();
+    const sel = document.getElementById("la-session");
+    sel.innerHTML = '<option value="">-- 选择会话 --</option>';
+    for(const s of (d.sessions||[])){
+      const opt = document.createElement("option");
+      opt.value = s; opt.textContent = s.slice(0,12);
+      if(s===laSessionId) opt.selected = true;
+      sel.appendChild(opt);
+    }
+    sel.onchange = function(){ if(this.value){ laSessionId=this.value; } };
+  }catch(e){}
+}
+async function laSendChat(){
+  const input = document.getElementById("la-input");
+  const msg = input.value.trim();
+  if(!msg || !laSessionId){ alert("请先创建会话"); return; }
+  input.value = "";
+  laAppend("user", msg);
+  document.getElementById("la-status").textContent = "思考中... (本地模型推理)";
+  try{
+    const res = await fetch("/local_agent/chat", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({session_id:laSessionId, message:msg})});
+    const d = await res.json();
+    if(d.answer) laAppend("assistant", d.answer);
+    if(d.tool_calls && d.tool_calls.length > 0){
+      for(const tc of d.tool_calls){
+        laAppend("tool", `[${tc.action}] -> ${tc.observation.slice(0,150)}`, true);
+      }
+    }
+    document.getElementById("la-status").textContent = `完成 (迭代${d.iterations||1}次)`;
+  }catch(e){
+    document.getElementById("la-status").textContent = "错误: "+e.message;
+    laAppend("assistant", "出错了: " + e.message);
+  }
 }
 </script>
 </body>

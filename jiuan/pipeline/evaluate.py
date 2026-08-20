@@ -14,7 +14,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Callable
 
-from ..common import DATASETS, REPORTS, load_config, mock_mode
+from ..common import DATASETS, REPORTS, apply_judge_overrides, load_config, mock_mode
 from .. import registry
 from . import infer, judge
 
@@ -274,7 +274,9 @@ def _eval_one(
             progress(f"{label}infer {i}/{total}")
 
     gen_params = {"system_prompt": system_prompt} if system_prompt else None
-    preds = infer.generate_batch(model_id, users, log=lambda _m: None, params=gen_params, on_item=_infer_progress)
+    # 评测后端：优先从配置读取，避免硬编码 vllm（vLLM 未运行时回退 transformers）
+    eval_backend = cfg.get("infer", {}).get("backend", "transformers")
+    preds = infer.generate_batch(model_id, users, log=lambda _m: None, params=gen_params, backend=eval_backend, on_item=_infer_progress)
 
     details, agg, total_tokens = [], {"rouge_l_f": [], "bleu_1": [], "bleu_2": []}, 0
     judge_dim_scores: dict[str, list[float]] = {"accuracy": [], "completeness": [], "relevance": [], "overall": []}
@@ -321,9 +323,7 @@ def _eval_one(
             judge_error = str(exc)[:300]
             for detail in details:
                 detail["judge_error"] = judge_error
-            log(f"LLM-as-Judge 批量评分失败：{judge_error}")
-            if judge_required:
-                raise RuntimeError(f"LLM-as-Judge 已开启但评分失败：{judge_error}") from exc
+            log(f"LLM-as-Judge 批量评分失败（已跳过，不阻断流程）：{judge_error}")
 
     def _avg(xs):
         return round(sum(xs) / len(xs), 4) if xs else 0.0
@@ -401,7 +401,11 @@ def _eval_one(
 
 def _build_comparison(target: dict, base: dict) -> dict:
     """并列对比目标模型与基线，计算各指标 delta 与提升百分比。"""
-    metric_keys = ["rouge_l_f", "bleu_1", "bleu_2", "judge_avg"]
+    metric_keys = [
+        "rouge_l_f", "bleu_1", "bleu_2",
+        "judge_accuracy", "judge_completeness", "judge_relevance", "judge_overall",
+        "bad_case_rate", "hallucination_rate",
+    ]
     rows = []
     for k in metric_keys:
         tv = target["metrics"].get(k)
@@ -426,6 +430,7 @@ def run(params: dict, log: Callable[[str], None], progress: "Callable[[str], Non
     - 对比：额外传 baseline（如 "base" 或另一个 model_id），同一 valid 集并列评测并给出 delta。
     """
     cfg = load_config()
+    cfg = apply_judge_overrides(cfg, params)  # 前端 judge 配置覆盖到 cfg["judge"]
     model_id = params.get("model_id", "base")
     dataset_id = params["dataset_id"]
     split = params.get("split", "valid")

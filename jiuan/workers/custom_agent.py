@@ -927,6 +927,9 @@ def _run_after_annotation(task_id: str, ctx: dict, ann_task_id: str, iteration_n
     model = _wait_task(train_task_id, f"{iteration_name} 训练", poll)
     model_id = model["model_id"]
     identity_validation = _identity_regression(model_id, direction, system_prompt)
+    # 身份验证在主进程中加载了模型，必须清理 GPU 缓存，否则推理子进程会 OOM
+    infer.clear_gpu_cache()
+    _log("身份验证完成，GPU 缓存已清理")
     source_model_id = ctx.get("parent_model_id")
     ctx["parent_model_id"] = model_id
     _set(last_model_id=model_id, final_model_id=model_id)
@@ -956,6 +959,8 @@ def _run_after_annotation(task_id: str, ctx: dict, ann_task_id: str, iteration_n
     infer_task_id = None
     if bool(params.get("run_inference_probe", True)):
         _set(current_phase=f"{iteration_name}：推理抽检")
+        # 等待 GPU 显存释放（训练子进程退出后需要时间）
+        _wait_gpu_free(min_free_mb=16000, log=_log)
         probe = params.get("infer_probe") or (eval_rows[0]["instruction"] if eval_rows else f"请说明{direction}的关键判断点")
         infer_task_id = runner.submit(
             Stage.INFER,
@@ -977,6 +982,8 @@ def _run_after_annotation(task_id: str, ctx: dict, ann_task_id: str, iteration_n
         )
 
     _set(current_phase=f"{iteration_name}：固定评测")
+    # 评测也要加载模型，确保 GPU 空闲
+    _wait_gpu_free(min_free_mb=16000, log=_log)
     eval_task_id = runner.submit(
         Stage.EVAL,
         {
@@ -1015,6 +1022,8 @@ def _run_after_annotation(task_id: str, ctx: dict, ann_task_id: str, iteration_n
         f"按类别验证 {br['samples']} 条，薄弱类别 {len(br.get('issues', []))} 个",
         {"breadth_report_id": br["report_id"], "issues": [x["category"] for x in br.get("issues", [])]},
     )
+    # 广度分析在主进程中加载了模型，清理 GPU 缓存为下一轮迭代准备
+    infer.clear_gpu_cache()
 
     summary = {
         "iteration": iteration,
@@ -1080,6 +1089,34 @@ def _run_iteration_loop(task_id: str, ctx: dict) -> str:
         _run_after_annotation(task_id, ctx, ann_task_id, iteration_name, iteration)
 
 
+def _wait_gpu_free(min_free_mb: int = 16000, log: Callable[[str], None] | None = None, max_wait: int = 30) -> None:
+    """等待 GPU 空闲显存 >= min_free_mb，最多等 max_wait 秒。
+
+    训练子进程退出后，GPU 显存释放有延迟。
+    在推理/评测子任务启动前调用此函数，确保有足够显存。
+    """
+    try:
+        import subprocess
+        for i in range(max_wait):
+            result = subprocess.run(
+                ["nvidia-smi", "--query-gpu=memory.free", "--format=csv,noheader,nounits"],
+                capture_output=True, text=True, timeout=5,
+            )
+            if result.returncode == 0:
+                free_mb = int(result.stdout.strip())
+                if free_mb >= min_free_mb:
+                    if i > 0 and log:
+                        log(f"GPU 空闲 {free_mb}MB >= {min_free_mb}MB，继续")
+                    return
+                if log and i == 0:
+                    log(f"等待 GPU 释放显存（当前空闲 {free_mb}MB，需要 {min_free_mb}MB）...")
+            time.sleep(1)
+        if log:
+            log(f"⚠️ GPU 等待超时（{max_wait}s），继续执行（可能 OOM）")
+    except Exception:
+        pass  # nvidia-smi 不可用时不阻塞
+
+
 def _wait_task(task_id: str, label: str, poll_interval: float) -> dict:
     last = ""
     while True:
@@ -1092,6 +1129,11 @@ def _wait_task(task_id: str, label: str, poll_interval: float) -> dict:
             _log(f"{label} 子任务 {task_id} -> {task.status.value}" + (f" ({task.progress})" if task.progress else ""))
             last = msg
         if task.status == TaskStatus.SUCCEEDED:
+            # 训练/推理子进程退出后，GPU 显存释放有延迟
+            # 等待 3 秒确保子进程完全退出，避免下一轮 OOM
+            if "训练" in label or "推理" in label or "评测" in label:
+                _log(f"{label} 完成，等待 GPU 显存释放...")
+                time.sleep(3)
             return task.result
         if task.status == TaskStatus.FAILED:
             raise RuntimeError(f"{label} 子任务失败 {task_id}: {task.error[:800]}")

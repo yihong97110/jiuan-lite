@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 class Stage(str, Enum):
     DATAPREP = "dataprep"   # 标：数据准备/清洗
+    DISTILL = "distill"     # 蒸馏：调用外部API生成数据
     TRAIN = "train"         # 训：SFT/LoRA
     INFER = "infer"         # 推：推理
     EVAL = "eval"           # 评：评测
@@ -36,6 +37,7 @@ class TrainReq(BaseModel):
     dataset_id: str
     backend: Optional[str] = Field(None, description="auto|hf|llamafactory|mock，缺省取 config")
     method: Optional[str] = None  # 覆盖 config: full|lora
+    base_model: Optional[str] = Field(None, description="基座模型选择：0.5b|7b，缺省取 config 默认")
     epochs: Optional[int] = None
     device: Optional[str] = Field(None, description="auto|cpu|cuda")
     precision: Optional[str] = Field(None, description="auto|fp32|fp16|bf16")
@@ -68,6 +70,11 @@ class EvalReq(BaseModel):
     baseline: Optional[str] = Field(None, description="对比基线模型 id（如 base）；填了则并列对比并给出 delta")
     max_samples: Optional[int] = Field(None, ge=1, description="评测样本上限，缺省取 config")
     system_prompt: Optional[str] = Field(None, description="可选系统提示词，用于领域专家场景")
+    # 前端动态 judge 配置；仅在 use_judge=true 时由前端填写
+    judge_platform: Optional[str] = Field(None, description="deepseek|openai|volcengine|custom")
+    judge_model: Optional[str] = Field(None, description="裁判模型名，如 deepseek-v4-flash / gpt-4o-mini")
+    judge_api_key: Optional[str] = Field(None, description="裁判 API Key；不填则回退环境变量")
+    judge_base_url: Optional[str] = Field(None, description="自定义裁判端点（custom 平台用）")
 
 
 class RagIngestReq(BaseModel):
@@ -280,6 +287,16 @@ class McpRegisterReq(BaseModel):
     name: str = Field(..., description="MCP服务器名称")
     command: str = Field(..., description="启动命令")
     description: str = Field("", description="描述")
+
+
+class DistillReq(BaseModel):
+    platform: str = Field("deepseek", description="平台：deepseek|openai|volcengine|custom")
+    model: str = Field("deepseek-chat", description="模型名称，如 deepseek-chat / gpt-4o-mini")
+    api_key: str = Field(..., description="API key")
+    domain: str = Field("应急管理", description="蒸馏领域描述")
+    base_url: str = Field("", description="自定义API端点（custom平台用）")
+    name: str = Field("distill", description="数据集名称前缀")
+    rename: str = Field("", description="重命名（留空则用name）")
 
 
 class Task(BaseModel):
