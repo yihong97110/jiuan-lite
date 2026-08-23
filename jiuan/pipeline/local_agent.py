@@ -132,7 +132,8 @@ def _tool_eval_report(model_id: str) -> str:
 # ReAct Prompt 模板（针对小模型优化：短、直接、few-shot）
 # ---------------------------------------------------------------------------
 
-REACT_SYSTEM = """你是一个智能助手。你可以使用工具来回答问题。
+# ReAct 格式指令（与领域身份解耦：身份由模型 meta 的 system_prompt 注入）
+REACT_INSTRUCTIONS = """你可以使用工具来辅助回答问题。
 
 工具列表：
 - rag_search(关键词)：搜索知识库
@@ -150,17 +151,25 @@ Action: rag_search(应急预案内容)
 
 示例2：
 问：你好
-Answer: 你好！我是智能助手，可以帮你搜索知识库、查询模型信息。
+Answer: 你好！我可以帮你搜索知识库、查询模型信息。
 
 示例3：
 问：你能做什么？
 Answer: 我可以搜索知识库、列出已训练模型、查询模型血缘和评测报告。
 """
 
+# 通用兜底身份（模型 meta 没有记录领域身份时使用）
+DEFAULT_IDENTITY = "你是一个智能助手。"
 
-def _build_react_prompt(question: str, history: list, tool_results: list) -> str:
-    """构建 ReAct 提示词。"""
-    parts = [REACT_SYSTEM]
+
+def _build_react_prompt(question: str, history: list, tool_results: list, system_prompt: str = "") -> str:
+    """构建 ReAct 提示词。
+
+    身份优先级：system_prompt（来自模型 meta）> DEFAULT_IDENTITY
+    ReAct 格式指令（REACT_INSTRUCTIONS）与身份解耦，所有模型通用。
+    """
+    identity = system_prompt or DEFAULT_IDENTITY
+    parts = [identity + "\n" + REACT_INSTRUCTIONS]
 
     # 加入对话历史（最近2轮，缩短）
     if history:
@@ -336,6 +345,7 @@ def react_run(
     cfg: dict,
     history: list = None,
     max_iterations: int = 3,
+    system_prompt: str = "",
 ) -> dict:
     """运行 ReAct 循环。
 
@@ -352,6 +362,7 @@ def react_run(
         cfg: 配置
         history: 对话历史
         max_iterations: 最大循环次数（防止死循环）
+        system_prompt: 模型领域身份（从 meta.json 读取，注入到 ReAct 提示词）
 
     Returns:
         {"answer": "...", "tool_calls": [...], "iterations": N}
@@ -376,8 +387,8 @@ def react_run(
 
     # === 第1层：ReAct 循环（模型生成） ===
     for i in range(max_iterations):
-        # 1. 构建提示词
-        prompt = _build_react_prompt(question, history, tool_results)
+        # 1. 构建提示词（注入模型领域身份）
+        prompt = _build_react_prompt(question, history, tool_results, system_prompt)
 
         # 如果第一轮已经有工具结果，提示模型基于结果回答
         if tool_results and i == 0:
@@ -450,15 +461,17 @@ def create_session(
     session_id = str(uuid.uuid4())[:8]
     cfg = load_config()
 
-    # 找到模型目录
+    # 找到模型目录 + 读取训练时记录的领域身份
     model_dir = None
+    model_meta = {}
     if model_id:
         for p in MODELS.iterdir():
             if p.name == model_id or (p / "meta.json").exists():
                 try:
-                    meta = json.loads((p / "meta.json").read_text(encoding="utf-8"))
+                    meta = json.loads((p / "meta.json").read_text(encoding="utf-8-sig"))
                     if meta.get("model_id") == model_id:
                         model_dir = p
+                        model_meta = meta
                         break
                 except Exception:
                     pass
@@ -468,12 +481,19 @@ def create_session(
         models = sorted(MODELS.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
         if models:
             model_dir = models[0]
+            try:
+                model_meta = json.loads((model_dir / "meta.json").read_text(encoding="utf-8-sig"))
+            except Exception:
+                pass
+
+    # 身份优先级：显式传入 > 模型训练时记录的 > 通用兜底
+    resolved_prompt = system_prompt or model_meta.get("system_prompt") or ""
 
     _sessions[session_id] = {
         "session_id": session_id,
         "model_id": model_id or (model_dir.name if model_dir else ""),
         "model_dir": str(model_dir) if model_dir else "",
-        "system_prompt": system_prompt or REACT_SYSTEM,
+        "system_prompt": resolved_prompt,
         "memory_window": memory_window,
         "messages": [],
         "created_at": time.time(),
@@ -519,13 +539,14 @@ def chat(session_id: str, message: str) -> dict:
     # 构建历史
     history = session["messages"][-(session["memory_window"] * 2):]
 
-    # 运行 ReAct 循环
+    # 运行 ReAct 循环（传入模型领域身份）
     result = react_run(
         question=message,
         model_dir=model_dir,
         cfg=cfg,
         history=history,
         max_iterations=3,
+        system_prompt=session.get("system_prompt", ""),
     )
 
     # 更新会话历史

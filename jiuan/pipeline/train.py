@@ -272,6 +272,20 @@ def run(params: dict, log: Callable[[str], None], progress: "Callable[[str], Non
     else:
         raise ValueError(f"未知训练后端: {backend}")
 
+    # 从训练数据提取领域身份（若 params 未显式指定）
+    # 训练数据的 messages[0] 通常是 system 消息，记录了模型应扮演的领域角色
+    domain_prompt = params.get("system_prompt") or ""
+    if not domain_prompt:
+        try:
+            rows = _read_dataset(dataset_id, "train")
+            for row in rows:
+                msgs = row.get("messages") or []
+                if msgs and msgs[0].get("role") == "system":
+                    domain_prompt = msgs[0].get("content", "")
+                    break
+        except Exception:
+            pass
+
     meta = {
         "model_id": model_id,
         "base": model_path(cfg),
@@ -280,7 +294,7 @@ def run(params: dict, log: Callable[[str], None], progress: "Callable[[str], Non
         "parent_model_id": params.get("init_model_id") or None,
         # Keep the project contract with the weights so inference does not
         # fall back to another domain's global system prompt.
-        "system_prompt": params.get("system_prompt") or "",
+        "system_prompt": domain_prompt,
         "domain_direction": params.get("domain_direction") or "",
         "knowledge_collection": params.get("knowledge_collection") or "",
         "project_id": params.get("project_id") or "",
