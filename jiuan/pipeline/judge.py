@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """评测后端：LLM-as-Judge（通过 OpenAI 兼容 HTTP 服务打分）。
 
 对标久安「模型评测系统」：用一个更强的裁判模型给待测模型的回答打分，
@@ -45,7 +45,15 @@ def _resolve_key(jc: dict) -> str:
     """
     k = jc.get("api_key")
     if k and str(k).strip() not in ("", "EMPTY"):
-        return str(k)
+        # 支持 ${ENV_VAR} 占位符：配置文件里写 ${DEEPSEEK_API_KEY} 时从环境变量展开
+        s = str(k).strip()
+        if s.startswith("${") and s.endswith("}"):
+            env_name_in_placeholder = s[2:-1].strip()
+            val = os.environ.get(env_name_in_placeholder, "")
+            if val:
+                return val
+        else:
+            return s
     env_name = jc.get("api_key_env", "JIUAN_JUDGE_API_KEY")
     return os.environ.get(env_name) or os.environ.get("ARK_API_KEY") or ""
 
