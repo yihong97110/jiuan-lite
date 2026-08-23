@@ -1,4 +1,4 @@
-﻿"""轻量模型仓库/血缘登记（对标久安「模型仓库」最小实现）。
+"""轻量模型仓库/血缘登记（对标久安「模型仓库」最小实现）。
 
 集中记录：数据集 -> base 模型 -> 训练参数 -> 产物路径 -> 评测报告，
 便于查询与回滚。PoC 用 JSONL 索引 + 目录 artifact；
@@ -238,13 +238,23 @@ def _is_impact_eval_report(report_id: str | None) -> bool:
     return dataset_id.startswith("impact-") or dataset_id.startswith("bio-impact-")
 
 
+def _has_children(dataset_id: str) -> bool:
+    """检查该数据集是否有子版本（被其他数据集继承）。"""
+    if not dataset_id:
+        return False
+    for d in list_datasets():
+        if d.get("parent_dataset") == dataset_id:
+            return True
+    return False
+
+
 def iterations() -> list[dict]:
     """按数据集血缘分组，展示每一轮迭代的 train->eval 指标对比。
 
     每个血缘链(v1->v2->...)为一组，组内按版本顺序给出：
     数据量 / 新增数 / loss / ROUGE / BLEU / judge / 相对上一版提升。
     """
-    datasets = [d for d in list_datasets() if d.get("role") != "eval"]  # 固定评测集不算迭代版本
+    datasets = [d for d in list_datasets() if d.get("role") != "eval" or _has_children(d.get("dataset_id"))]
     if not datasets:
         return []
     by_id = {d["dataset_id"]: d for d in datasets}
@@ -278,7 +288,9 @@ def iterations() -> list[dict]:
             "rouge_l_f": metrics.get("rouge_l_f"),
             "bleu_1": metrics.get("bleu_1"),
             "bleu_2": metrics.get("bleu_2"),
-            "judge_avg": metrics.get("judge_avg"),
+            "judge_avg": metrics.get("judge_avg") or metrics.get("judge_overall"),
+            "bad_case_rate": metrics.get("bad_case_rate"),
+            "hallucination_rate": metrics.get("hallucination_rate"),
         }
 
     # 找出根节点(无 parent 或 parent 不在当前集合)，向下展开子链
