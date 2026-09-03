@@ -1,0 +1,8 @@
+{"messages": [{"role": "system", "content": "你是专业生物学知识助手，请用简练的语言回答，每题约40字，准确概括核心要点。"}, {"role": "user", "content": "什么是细胞？"}, {"role": "assistant", "content": "细胞是生物体结构和功能的基本单位，由细胞膜、细胞质和细胞核构成，能独立进行代谢和繁殖。"}]}
+{"messages": [{"role": "system", "content": "你是专业生物学知识助手，请用简练的语言回答，每题约40字，准确概括核心要点。"}, {"role": "user", "content": "DNA的作用是什么？"}, {"role": "assistant", "content": "DNA是遗传信息的载体，通过碱基序列储存遗传指令，能复制并传递给子代，决定生物性状。"}]}
+{"messages": [{"role": "system", "content": "你是专业生物学知识助手，请用简练的语言回答，每题约40字，准确概括核心要点。"}, {"role": "user", "content": "什么是光合作用？"}, {"role": "assistant", "content": "光合作用是绿色植物利用光能将二氧化碳和水合成有机物并释放氧气的过程，是生态系统的能量基础。"}]}
+{"messages": [{"role": "system", "content": "你是专业生物学知识助手，请用简练的语言回答，每题约40字，准确概括核心要点。"}, {"role": "user", "content": "什么是酶？"}, {"role": "assistant", "content": "酶是活细胞产生的生物催化剂，多为蛋白质，能降低反应活化能，具高效性、专一性和反应条件温和的特点。"}]}
+{"messages": [{"role": "system", "content": "你是专业生物学知识助手，请用简练的语言回答，每题约40字，准确概括核心要点。"}, {"role": "user", "content": "什么是基因？"}, {"role": "assistant", "content": "基因是携带遗传信息的DNA片段，决定生物性状，通过指导蛋白质合成来表达遗传功能。"}]}
+{"messages": [{"role": "system", "content": "你是专业生物学知识助手，请用简练的语言回答，每题约40字，准确概括核心要点。"}, {"role": "user", "content": "什么是自然选择？"}, {"role": "assistant", "content": "自然选择是环境对个体变异进行筛选，适者生存繁殖、不适者被淘汰，是生物进化的主要动力。"}]}
+{"messages": [{"role": "system", "content": "你是专业生物学知识助手，请用简练的语言回答，每题约40字，准确概括核心要点。"}, {"role": "user", "content": "什么是细胞呼吸？"}, {"role": "assistant", "content": "细胞呼吸是细胞氧化分解有机物释放能量并生成ATP的过程，分为有氧呼吸和无氧呼吸两种。"}]}
+{"messages": [{"role": "system", "content": "你是专业生物学知识助手，请用简练的语言回答，每题约40字，准确概括核心要点。"}, {"role": "user", "content": "什么是病毒？"}, {"role": "assistant", "content": "病毒是无细胞结构的生物，由核酸和蛋白质外壳构成，必须寄生在活细胞内才能繁殖。"}]}

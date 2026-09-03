@@ -27,6 +27,48 @@ data/vector_db/
 data/jiuan.db
 data/jiuan.db-wal
 data/jiuan.db-shm
+# 运行时状态（Agent 会话/线程 sqlite）
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
+# 同步暂存目录
+_server_sync/
+
+# 调试数据集
+data/datasets/_dbg_*/
+
+# 本地一次性运维脚本（含服务器凭证/旧端口，不入库，仅本地保留）
+/check_before_start.py
+/check_distill_html.py
+/check_distill_task.py
+/check_gpu.py
+/check_gpu2.py
+/check_vllm_status.py
+/debug_distill_api.py
+/final_check.py
+/install_and_download.py
+/install_deps.py
+/quick_check.py
+/redownload7b.py
+/redownload_and_check.py
+/setup_final.py
+/setup_gpu_env.py
+/setup_gpu_env2.py
+/setup_no_vllm.py
+/start_7b.py
+/start_platform.py
+/status_check.py
+/upload_distill.py
+/upload_distill_v2.py
+/upload_missing.py
+/upload_models.py
+/upload_project.py
+/_retrain_7b_clean.py
+/_run_mirror_test.py
+/_run_rag_test.py
+/_test_rag.py
+/_test_rag_mirror.py
 
 # 密钥和配置（API Key 走 .env 环境变量，yaml 只留占位符）
 .env

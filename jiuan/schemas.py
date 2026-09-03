@@ -48,7 +48,7 @@ class TrainReq(BaseModel):
     lora_r: Optional[int] = Field(None, ge=1, description="LoRA 秩 r")
     lora_alpha: Optional[int] = Field(None, ge=1, description="LoRA alpha")
     lora_dropout: Optional[float] = Field(None, ge=0.0, le=0.9, description="LoRA dropout")
-    name: str = Field("qwen0.5b-sft")
+    name: Optional[str] = Field(None, description="模型名前缀；缺省时自动根据基底模型+领域+迭代版本生成（如 gaokao7b-v1）")
 
 
 class InferReq(BaseModel):
@@ -210,6 +210,7 @@ class CustomAgentStartReq(BaseModel):
     dataset_name: str = Field("领域知识", description="训练数据集名前缀")
     model_name: str = Field("领域专家", description="训练后模型名前缀")
     base_model_path: Optional[str] = Field(None, description="基底模型本地目录或 HF 名称；为空使用 config 默认 Qwen0.5B")
+    base_model: Optional[str] = Field(None, description="基底模型标识：7b|0.5b，用于动态命名；为空时从 base_model_path 推断")
     output_root: str = Field("data/custom_agents", description="产物输出目录；建议位于项目 data 下")
     sample_count: int = Field(20, ge=6, le=200, description="自动生成多少条训练样本")
     eval_sample_count: int = Field(8, ge=3, le=80, description="自动生成多少条 held-out 验证样本")
@@ -246,16 +247,24 @@ class CustomAgentExtendReq(BaseModel):
 
 
 class ChatCreateReq(BaseModel):
-    """创建 LangChain Agent 对话会话。"""
+    """创建 LangChain Agent 对话会话（双层记忆）。"""
     system_prompt: Optional[str] = Field("", description="自定义系统提示词；为空使用默认")
     model_id: str = Field("", description="关联的已训练模型ID（用于上下文标识）")
-    memory_window: int = Field(10, ge=0, description="滑动窗口轮数（0=保留全部，N=保留最近N轮对话）")
+    memory_window: int = Field(10, ge=0, description="短期记忆滑动窗口轮数（0=保留全部，N=保留最近N轮对话）")
+    scope: str = Field("", description="长期记忆域（同域会话共享 SQLite 记忆）；空则按 model_id 分域")
+    resume_session_id: str = Field("", description="恢复指定历史会话（平台重启后 RAM 丢失时从 SQLite 拉回历史）")
 
 
 class ChatReq(BaseModel):
     """发送对话消息（非流式或流式）。"""
     session_id: str = Field(..., description="会话ID")
     message: str = Field(..., description="用户消息")
+
+
+class LocalAgentSwitchReq(BaseModel):
+    """本地 Agent 会话热切换底层模型。"""
+    session_id: str = Field(..., description="会话ID")
+    model_id: str = Field(..., description="目标模型ID（另一个已训练模型/LoRA）")
 
 
 class WorkflowReq(BaseModel):
@@ -287,6 +296,10 @@ class McpRegisterReq(BaseModel):
     name: str = Field(..., description="MCP服务器名称")
     command: str = Field(..., description="启动命令")
     description: str = Field("", description="描述")
+
+
+class McpTestReq(BaseModel):
+    name: str = Field(..., description="要测试的MCP服务器名称")
 
 
 class DistillReq(BaseModel):

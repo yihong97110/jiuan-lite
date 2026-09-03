@@ -1,18 +1,22 @@
 # Qwen2.5-7B-Instruct 训推配置（GPU 服务器版，需显存 >= 24GB，如 RTX 3090/A100）
 # API Key 一律走环境变量/.env（前端「设置·API Key」页可配），此处不留明文。
 chat:
-  # -- 火山方舟 DeepSeek（OpenAI 兼容）--
-  base_url: https://ark.cn-beijing.volces.com/api/plan/v3
+  # -- 双后端路由（langchain_agent._get_llm 按 model_id 自动切换）--
+  # 默认（前端选"DeepSeek 默认"，不传 model_id）：云端 DeepSeek，function calling 强、
+  # 不占本地 GPU -- 训练工具可安全停掉本地 vLLM 释放显存而不中断对话。
+  base_url: https://api.deepseek.com/v1
   model: deepseek-v4-flash
-  api_key_env: ARK_API_KEY            # 从 .env / 环境变量读取
-  api_key: ${ARK_API_KEY}             # 占位，勿填明文
-  # -- vLLM 本地推理（Linux+GPU，用微调后的模型提供服务）--
-  # base_url: http://127.0.0.1:8001/v1
-  # model: jiuam-model                # 与 vllm serve --served-model-name 对齐
-  # api_key: EMPTY
+  api_key_env: DEEPSEEK_API_KEY
+  # 选择已训练模型时：本地 vLLM（LoRA + hermes function calling）
+  vllm_base_url: http://127.0.0.1:8001/v1
+  vllm_model: gaokao7b-v3-20260823-223535   # 与 vllm serve --lora-modules 名对齐（= model_id）
+  system_prompt: ""   # 留空用代码里的 DEFAULT_SYSTEM_PROMPT（平台训练助手：含训练咨询->确认->执行流程）
+  memory_window: 10
+  temperature: 0.7
+  max_tokens: 1024
 
 infer:
-  backend: transformers     # auto | transformers | vllm | mock；GPU 上可切 vllm
+  backend: vllm             # 服务器评测/Agent 走 vLLM(8001)；GPU 已被 vLLM 占用，勿用 transformers 直载 7B
   device: cuda
   precision: bf16           # 7B 用 bf16（24GB 卡不开量化可跑推理）
   max_new_tokens: 512

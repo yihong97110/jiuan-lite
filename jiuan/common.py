@@ -14,6 +14,33 @@ MODELS = DATA / "models"
 REPORTS = DATA / "reports"
 DB_PATH = DATA / "jiuan.db"
 
+
+def _load_env_file() -> None:
+    """加载项目根目录 .env 到 os.environ（不覆盖已存在的环境变量）。
+
+    无 dotenv 依赖，手工解析 KEY=VALUE 行。修复：直接命令行跑 train/evaluate
+    等脚本时 judge API key 不会从 .env 进入环境变量，导致 judge 静默降级。
+    """
+    env_path = ROOT / ".env"
+    if not env_path.exists():
+        return
+    try:
+        with open(env_path, "r", encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, val = line.partition("=")
+                key = key.strip()
+                val = val.strip().strip("'\"")
+                if key and key not in os.environ:
+                    os.environ[key] = val
+    except OSError:
+        pass
+
+
+_load_env_file()
+
 for _p in (DATASETS, MODELS, REPORTS, REGISTRY):
     _p.mkdir(parents=True, exist_ok=True)
 

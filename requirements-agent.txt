@@ -1,7 +1,17 @@
-# LangChain Agent 对话功能依赖
+# LangChain Agent 对话功能依赖（含双层记忆栈，实测版本）
 # 安装：pip install -r requirements-agent.txt
 # 安装后 /chat 系列 API 可用，Agent 可对接 vLLM/DeepSeek/方舟等 OpenAI 兼容端点
+#
+# 分层说明：
+# - langchain/langchain-openai : Agent 框架 + OpenAI 兼容端点客户端
+# - langgraph + checkpoint-sqlite : ReAct 状态机 + 双层记忆
+#     短期记忆 = SqliteSaver(checkpointer, thread_id 隔离会话)
+#     长期记忆 = SqliteStore(namespace 按模型隔离, 跨模型不串扰)
+# - scikit-learn : RAG 嵌入器 TF-IDF 离线兜底（无 GPU/无 BGE 依赖时可用）
 
-langchain>=0.2.0
-langchain-core>=0.2.0
-langchain-openai>=0.1.0
+langchain>=1.0.0
+langchain-core>=1.0.0
+langchain-openai>=1.0.0
+langgraph>=1.0.0
+langgraph-checkpoint-sqlite>=3.0.0
+scikit-learn>=1.5.0

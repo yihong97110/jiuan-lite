@@ -1,0 +1,10 @@
+{
+  "dataset_id": "gaokao-7b-v1-20260823",
+  "parent_dataset_id": "gaokao-v1-20260820",
+  "domain": "高考志愿填报指导",
+  "system_prompt": "你是经验丰富的高考志愿填报指导老师，帮助高中毕业生根据分数、兴趣和就业前景选择适合的大学和专业。回答要具体、实用、可操作。",
+  "train_count": 20,
+  "valid_count": 10,
+  "description": "7B 训练专用扩展版，含 20 条训练 + 10 条验证，覆盖分数推荐、专业选择、政策解读等场景",
+  "created_at": "2026-08-23"
+}

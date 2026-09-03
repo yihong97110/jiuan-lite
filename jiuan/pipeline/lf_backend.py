@@ -38,8 +38,30 @@ def available() -> bool:
     return shutil.which("llamafactory-cli") is not None
 
 
+def _train_env_python() -> str | None:
+    """查找 conda base 环境 Python（旧稳定方案：单环境跑 vllm+llamafactory）。
+
+    base = Python 3.12 + vllm 0.27.1 + llamafactory 0.9.5，
+    2026-08-23 已验证三者共存可用（torch 2.13 残留修复后）。
+    """
+    candidates = [
+        "/root/miniconda3/bin/python",
+        os.path.expanduser("~/miniconda3/bin/python"),
+    ]
+    for p in candidates:
+        if os.path.isfile(p) and os.access(p, os.X_OK):
+            return p
+    return None
+
+
 def _cli_command() -> list[str]:
-    """优先用 CLI，其次退化为 `python -m llamafactory.cli`。"""
+    """优先用训练专用环境的 llamafactory-cli，其次系统 CLI，最后 python -m。"""
+    train_py = _train_env_python()
+    if train_py:
+        train_cli = train_py.replace("/bin/python", "/bin/llamafactory-cli")
+        if os.path.isfile(train_cli):
+            return [train_cli]
+        return [train_py, "-m", "llamafactory.cli"]
     exe = shutil.which("llamafactory-cli")
     if exe:
         return [exe]
@@ -49,17 +71,22 @@ def _cli_command() -> list[str]:
 def _child_env() -> dict:
     """为子进程构造环境变量：确保能导入 llamafactory 与本项目。
 
-    - 把当前解释器的 site-packages / 项目根加入 PYTHONPATH，
-      避免退化为 `python -m llamafactory.cli` 时子进程 sys.path 缺失。
+    - conda base 单环境（旧稳定方案）跑 vllm+llamafactory，
+      PATH 前插 base bin 即可，只需项目根。
     - 离线/推理相关开关从父进程透传。
     """
     env = os.environ.copy()
     from ..common import ROOT
 
-    extra_paths = [str(ROOT)]
-    for p in sys.path:
-        if p and p not in extra_paths:
-            extra_paths.append(p)
+    train_py = _train_env_python()
+    if train_py:
+        env["PATH"] = os.path.dirname(train_py) + os.pathsep + env.get("PATH", "")
+        extra_paths = [str(ROOT)]
+    else:
+        extra_paths = [str(ROOT)]
+        for p in sys.path:
+            if p and p not in extra_paths:
+                extra_paths.append(p)
     prev = env.get("PYTHONPATH", "")
     if prev:
         extra_paths.append(prev)

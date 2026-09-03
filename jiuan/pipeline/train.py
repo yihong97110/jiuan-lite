@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 from pathlib import Path
 from typing import Callable
@@ -26,6 +27,62 @@ from ..common import (
     resolve_precision,
 )
 from . import lf_backend
+
+_DOMAIN_MAP = {
+    "高考": "gaokao", "志愿": "gaokao", "选科": "gaokao", "选专业": "gaokao", "选大学": "gaokao",
+    "生物": "biology", "医学": "medical", "化学": "chemistry", "物理": "physics",
+    "法律": "law", "金融": "finance", "教育": "education", "客服": "service",
+}
+
+
+def _domain_slug(direction: str) -> str:
+    """从领域方向文本提取简短英文 slug。"""
+    for cn, en in _DOMAIN_MAP.items():
+        if cn in direction:
+            return en
+    words = re.findall(r"[a-zA-Z]{2,}", direction)
+    if words:
+        return words[0].lower()[:12]
+    return "custom"
+
+
+def _infer_base_tag(params: dict, cfg: dict) -> str:
+    """推断基底模型标签（7b / 0.5b / 空字符串）。"""
+    base_model = (params.get("base_model") or "").lower()
+    if base_model:
+        return base_model
+    # 从 base_model_path 推断
+    path = params.get("base_model_path") or model_path(cfg) or ""
+    path_lower = path.lower()
+    if "7b" in path_lower:
+        return "7b"
+    if "0.5b" in path_lower or "0_5b" in path_lower:
+        return "0.5b"
+    # 从 config model name 推断
+    model_name = (cfg.get("model", {}).get("name") or "").lower()
+    if "7b" in model_name:
+        return "7b"
+    if "0.5b" in model_name:
+        return "0.5b"
+    return ""
+
+
+def _derive_model_name(params: dict, dataset_id: str, cfg: dict) -> str:
+    """根据基底模型、领域方向、迭代版本动态生成模型名前缀。
+
+    格式：{domain}{base}-v{version}
+    例如：gaokao7b-v1, gaokao7b-v2
+
+    当用户未显式传入 name 时自动调用，
+    避免训练 7B 模型却被命名为 qwen0.5b-sft 的问题。
+    """
+    base_tag = _infer_base_tag(params, cfg)
+    direction = params.get("domain_direction") or params.get("system_prompt") or ""
+    domain_slug = _domain_slug(direction)
+    version = registry.dataset_version(dataset_id) or 1
+    if version < 1:
+        version = 1
+    return f"{domain_slug}{base_tag}-v{version}"
 
 
 def _read_dataset(dataset_id: str, split: str = "train") -> list[dict]:
@@ -247,7 +304,13 @@ def run(params: dict, log: Callable[[str], None], progress: "Callable[[str], Non
         log(f"基座模型: config 默认 ({cfg.get('model', {}).get('name', '?')})")
     cfg = apply_train_overrides(cfg, params)
     dataset_id = params["dataset_id"]
-    name = params.get("name", "qwen0.5b-sft")
+    name = params.get("name") or ""
+    if not name or name == "qwen0.5b-sft":
+        # 动态命名：根据基底模型 + 领域方向 + 迭代版本自动生成
+        name = _derive_model_name(params, dataset_id, cfg)
+        log(f"动态命名: {name}（base={_infer_base_tag(params, cfg) or '未知'}, "
+            f"domain={_domain_slug(params.get('domain_direction') or params.get('system_prompt') or '')}, "
+            f"version={registry.dataset_version(dataset_id) or 1}）")
     rows = _read_dataset(dataset_id, "train")
     log(f"数据集 {dataset_id}：训练集 {len(rows)} 条样本")
 

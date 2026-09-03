@@ -904,10 +904,13 @@ def _run_after_annotation(task_id: str, ctx: dict, ann_task_id: str, iteration_n
     )
 
     _set(current_phase=f"{iteration_name}：训练模型")
+    _stop_vllm_if_running()
     _progress(f"{iteration_name}：提交训练任务")
     train_params = {
         "dataset_id": parent_dataset,
-        "name": f"{iteration_name}-{params.get('model_name') or '领域专家'}",
+        # name 不传，让 train.py 根据 base_model+domain+version 动态生成
+        "base_model": params.get("base_model") or None,
+        "base_model_path": params.get("base_model_path") or None,
         "backend": train_backend,
         "method": "lora",
         "device": train_device,
@@ -916,7 +919,6 @@ def _run_after_annotation(task_id: str, ctx: dict, ann_task_id: str, iteration_n
         "lora_r": 4,
         "lora_alpha": 8,
         "lora_dropout": 0.05,
-        "base_model_path": params.get("base_model_path") or None,
         "system_prompt": system_prompt,
         "domain_direction": direction,
         "knowledge_collection": params.get("collection") or "custom",
@@ -1087,6 +1089,23 @@ def _run_iteration_loop(task_id: str, ctx: dict) -> str:
                 return _pause_for_annotation(ctx, ann_task, iteration_name, iteration)
 
         _run_after_annotation(task_id, ctx, ann_task_id, iteration_name, iteration)
+
+
+def _stop_vllm_if_running() -> None:
+    """训练前停止 vLLM 推理服务，释放 GPU 显存（3090 24GB 不能同时训练与推理）。"""
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["pgrep", "-f", "vllm"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            _log("检测到 vLLM 推理服务正在运行，停止以释放 GPU 显存...")
+            subprocess.run(["pkill", "-f", "vllm"], capture_output=True, timeout=10)
+            time.sleep(3)
+            _log("vLLM 已停止，GPU 显存已释放")
+    except Exception as e:
+        _log(f"停止 vLLM 时异常（可能未运行）: {e}")
 
 
 def _wait_gpu_free(min_free_mb: int = 16000, log: Callable[[str], None] | None = None, max_wait: int = 30) -> None:
@@ -1609,7 +1628,8 @@ def _run(task_id: str, params: dict) -> None:
             _progress(f"第 {idx} 轮：提交训练任务")
             train_params = {
                 "dataset_id": parent_dataset,
-                "name": f"{iteration_name}-{params.get('model_name') or '领域专家'}",
+                "base_model": params.get("base_model") or None,
+                "base_model_path": params.get("base_model_path") or None,
                 "backend": train_backend,
                 "method": "lora",
                 "device": train_device,
@@ -1618,7 +1638,6 @@ def _run(task_id: str, params: dict) -> None:
                 "lora_r": 4,
                 "lora_alpha": 8,
                 "lora_dropout": 0.05,
-                "base_model_path": params.get("base_model_path") or None,
             }
             train_task_id = runner.submit(Stage.TRAIN, train_params)
             model = _wait_task(train_task_id, f"{iteration_name} 训练", poll)

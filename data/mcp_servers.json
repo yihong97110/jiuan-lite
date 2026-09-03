@@ -1,0 +1,19 @@
+{
+  "demo-math": {
+    "name": "demo-math",
+    "command": "C:\\Users\\21888\\anaconda3\\envs\\langchain1.2\\python.exe C:\\Users\\21888\\AppData\\Local\\Temp\\mcp_demo_server.py",
+    "description": "演示MCP服务器(echo/add)",
+    "status": "loaded",
+    "tools": [
+      {
+        "name": "add",
+        "description": "两整数相加，返回和。"
+      },
+      {
+        "name": "echo",
+        "description": "原样返回输入文本（连通性测试）。"
+      }
+    ],
+    "registered_at": 1788072101.8142006
+  }
+}

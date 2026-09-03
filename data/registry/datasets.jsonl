@@ -43,3 +43,4 @@
 {"type": "dataset", "dataset_id": "gaokao-v1-20260820", "parent_dataset": null, "sample_count": 10, "source": "distill:deepseek/deepseek-v4-flash", "registered_at": 1787458702.1796014}
 {"type": "dataset", "dataset_id": "gaokao-v1-20260820", "role": "eval", "registered_at": 1787458702.1802826}
 {"type": "dataset", "dataset_id": "gaokao-v2-20260820", "parent_dataset": "gaokao-v1-20260820", "sample_count": 20, "source": "distill:deepseek/deepseek-v4-flash", "registered_at": 1787459214.069872}
+{"type": "dataset", "dataset_id": "_dbg_dp-20260825-112950", "parent_dataset": null, "sample_count": 124, "source": "data/samples.jsonl", "registered_at": 1787628590.0208466, "train_count": 100, "valid_count": 24, "added_count": 124, "source_dataset": null}

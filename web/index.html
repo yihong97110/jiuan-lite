@@ -5,49 +5,139 @@
 <title>jiuan-lite 训推平台</title>
 <style>
   * { box-sizing: border-box; }
-  body { font-family: system-ui, "Microsoft YaHei", sans-serif; margin: 0; background:#0f172a; color:#e2e8f0; }
-  header { padding:18px 24px; border-bottom:1px solid #1e293b; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-  h1 { font-size:18px; margin:0; }
+  /* === 设计令牌：多层灰阶 + 强调色，参考 article 项目分层思路 === */
+  :root {
+    --bg-0: #0a1020;        /* 最底层：深空蓝黑 */
+    --bg-1: #0f172a;        /* 页面底色 */
+    --bg-2: #131c33;       /* 卡片面 */
+    --bg-3: #1a2742;       /* 输入/表格行 hover */
+    --ink: #e8eef7;        /* 主文字（比原来更亮，层次强） */
+    --ink-2: #b4c0d4;      /* 次要文字 */
+    --muted: #7d8aa3;      /* 弱化文字/标签 */
+    --line: #1e293b;       /* 分割线 */
+    --line-2: #2d3a55;     /* 强分割线/输入边框 */
+    --cobalt: #3b82f6;     /* 主强调（蓝） */
+    --cobalt-2: #2563eb;
+    --teal: #2dd4bf;       /* 成功/数据高亮 */
+    --amber: #fbbf24;      /* 警告/mock */
+    --danger: #f87171;
+    --radius: 10px;
+    --shadow: 0 4px 24px rgba(0,0,0,.35);
+    --shadow-soft: 0 2px 8px rgba(0,0,0,.22);
+  }
+  /* === 背景：径向光晕 + 细网格纹理，营造空间纵深 === */
+  body {
+    font-family: Inter, system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+    margin: 0; color: var(--ink); min-height: 100vh;
+    background:
+      radial-gradient(circle at 12% 8%, rgba(59,130,246,.10), transparent 38%),
+      radial-gradient(circle at 88% 4%, rgba(45,212,191,.07), transparent 30%),
+      linear-gradient(rgba(45,58,90,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(45,58,90,.04) 1px, transparent 1px),
+      var(--bg-1);
+    background-size: auto, auto, 32px 32px, 32px 32px, auto;
+    background-attachment: fixed;
+    letter-spacing: 0;
+  }
+  /* === 顶栏：玻璃态 + 底部光线 === */
+  header {
+    padding:16px 24px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    backdrop-filter: blur(14px);
+    background: linear-gradient(180deg, rgba(15,23,42,.88), rgba(10,16,32,.72));
+    border-bottom:1px solid var(--line);
+    box-shadow: 0 1px 0 rgba(59,130,246,.10);
+  }
+  h1 { font-size:18px; margin:0; font-weight:750; letter-spacing:.01em; }
   .badge { padding:4px 10px; border-radius:6px; font-size:12px; font-weight:700; }
-  .badge.mock { background:#78350f; color:#fbbf24; }
-  .badge.real { background:#064e3b; color:#4ade80; }
-  #modehint { color:#94a3b8; font-size:12px; margin:0 0 0 auto; max-width:520px; }
-  nav { display:flex; gap:6px; padding:14px 24px 0; flex-wrap:wrap; }
-  nav button { background:#1e293b; color:#cbd5e1; border:0; padding:10px 20px; border-radius:8px 8px 0 0; cursor:pointer; font-size:14px; }
-  nav button.active { background:#2563eb; color:#fff; font-weight:600; }
+  .badge.mock { background:rgba(120,53,15,.4); color:var(--amber); border:1px solid rgba(251,191,36,.3); }
+  .badge.real { background:rgba(6,78,59,.35); color:var(--teal); border:1px solid rgba(45,212,191,.3); }
+  #modehint { color:var(--muted); font-size:12px; margin:0 0 0 auto; max-width:520px; }
+  nav {
+    display:flex; gap:6px; padding:14px 24px 0; flex-wrap:wrap;
+    backdrop-filter: blur(10px);
+    background: linear-gradient(180deg, rgba(15,23,42,.55), transparent);
+  }
+  nav button {
+    background:rgba(30,41,59,.55); color:var(--ink-2); border:1px solid var(--line);
+    padding:9px 18px; border-radius:8px 8px 0 0; cursor:pointer; font-size:14px;
+    transition: all .18s ease;
+  }
+  nav button:hover { color:var(--ink); background:rgba(45,58,90,.6); border-color:var(--line-2); }
+  nav button.active {
+    background:linear-gradient(135deg, var(--cobalt), var(--cobalt-2));
+    color:#fff; font-weight:650; border-color:transparent;
+    box-shadow: 0 -1px 0 rgba(96,165,250,.4) inset, 0 4px 12px rgba(37,99,235,.3);
+  }
   main { padding:22px 24px; }
   .page { display:none; }
-  .page.active { display:block; }
-  .card { background:#111c34; border:1px solid #1e293b; border-radius:10px; padding:18px; margin-bottom:18px; }
-  .card h2 { font-size:15px; margin:0 0 4px; }
-  .desc { color:#94a3b8; font-size:12px; margin:0 0 14px; }
+  .page.active { display:block; animation: fadeSlide .35s cubic-bezier(.2,.7,.2,1); }
+  @keyframes fadeSlide { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .card {
+    background: linear-gradient(180deg, var(--bg-2), rgba(19,28,51,.95));
+    border:1px solid var(--line); border-radius:var(--radius);
+    padding:18px; margin-bottom:18px;
+    box-shadow: var(--shadow-soft);
+    transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+  }
+  .card:hover { border-color: rgba(59,130,246,.28); }
+  .card h2 { font-size:15px; margin:0 0 4px; font-weight:720; }
+  .desc { color:var(--muted); font-size:12px; margin:0 0 14px; line-height:1.55; }
   .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
   .fld { display:flex; flex-direction:column; gap:4px; }
-  .fld label { font-size:12px; color:#94a3b8; }
-  input, select, textarea { padding:7px 9px; border-radius:6px; border:1px solid #334155; background:#0b1220; color:#e2e8f0; font-size:13px; }
+  .fld label { font-size:12px; color:var(--muted); }
+  input, select, textarea {
+    padding:7px 9px; border-radius:6px; border:1px solid var(--line-2);
+    background:var(--bg-0); color:var(--ink); font-size:13px;
+    transition: border-color .18s ease, box-shadow .18s ease;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color:var(--cobalt); box-shadow:0 0 0 3px rgba(59,130,246,.15); outline:none;
+  }
   textarea { width:100%; min-height:64px; resize:vertical; }
-  button.go { background:#2563eb; color:#fff; border:0; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:13px; }
-  button.ghost { background:#1e293b; color:#cbd5e1; }
+  button.go {
+    background:linear-gradient(135deg, var(--cobalt), var(--cobalt-2)); color:#fff; border:0;
+    padding:8px 16px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:550;
+    transition: transform .16s ease, box-shadow .16s ease;
+  }
+  button.go:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(37,99,235,.35); }
+  button.ghost { background:var(--bg-3); color:var(--ink-2); border:1px solid var(--line-2); }
+  button.ghost:hover { background:rgba(45,58,90,.8); color:var(--ink); }
   table { width:100%; border-collapse:collapse; margin-top:10px; font-size:12px; }
-  th,td { border-bottom:1px solid #1e293b; padding:6px 8px; text-align:left; vertical-align:top; }
-  td { max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  td.result { max-width:520px; white-space:normal; word-break:break-all; color:#94a3b8; }
-  .s-succeeded{color:#4ade80} .s-failed{color:#f87171} .s-running{color:#fbbf24} .s-pending{color:#94a3b8}
-  .out { background:#0b1220; border:1px solid #1e293b; border-radius:6px; padding:10px; font-size:12px; white-space:pre-wrap; margin-top:10px; min-height:24px; color:#cbd5e1; }
+  th,td { border-bottom:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top; }
+  th { color:var(--muted); font-weight:600; background:rgba(15,23,42,.4); }
+  td { max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink-2); }
+  td.result { max-width:520px; white-space:normal; word-break:break-all; color:var(--muted); }
+  .s-succeeded{color:var(--teal)} .s-failed{color:var(--danger)} .s-running{color:var(--amber)} .s-pending{color:var(--muted)}
+  .out {
+    background:var(--bg-0); border:1px solid var(--line); border-radius:6px; padding:10px;
+    font-size:12px; white-space:pre-wrap; margin-top:10px; min-height:24px; color:var(--ink-2);
+  }
   tr.clk { cursor:pointer; }
-  tr.clk:hover td { background:#16233f; }
+  tr.clk:hover td { background:var(--bg-3); }
   .more { margin-top:8px; }
-  .more button { background:#1e293b; color:#93c5fd; border:1px solid #334155; padding:5px 14px; border-radius:6px; cursor:pointer; font-size:12px; }
-  .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:50; }
+  .more button { background:var(--bg-3); color:#93c5fd; border:1px solid var(--line-2); padding:5px 14px; border-radius:6px; cursor:pointer; font-size:12px; }
+  .more button:hover { border-color:rgba(59,130,246,.4); }
+  .modal-bg { display:none; position:fixed; inset:0; background:rgba(2,6,23,.72); z-index:50; backdrop-filter:blur(6px); }
   .modal-bg.open { display:flex; align-items:flex-start; justify-content:center; }
-  .modal { background:#111c34; border:1px solid #334155; border-radius:10px; max-width:860px; width:92%; margin-top:40px; max-height:86vh; overflow:auto; padding:20px; }
+  .modal {
+    background:linear-gradient(180deg, var(--bg-2), rgba(19,28,51,.98));
+    border:1px solid var(--line-2); border-radius:var(--radius);
+    max-width:860px; width:92%; margin-top:40px; max-height:86vh; overflow:auto; padding:20px;
+    box-shadow: var(--shadow);
+  }
   .modal h3 { margin:0 0 6px; font-size:15px; }
-  .modal pre { background:#0b1220; border:1px solid #1e293b; border-radius:6px; padding:10px; font-size:12px; white-space:pre-wrap; word-break:break-all; color:#cbd5e1; overflow:auto; }
-  .modal .x { float:right; cursor:pointer; color:#94a3b8; font-size:20px; line-height:1; }
-  .kv { color:#94a3b8; font-size:12px; margin:2px 0; }
-  .kv b { color:#e2e8f0; }
-  .hint { color:#94a3b8; font-size:12px; line-height:1.55; }
-  .pill { display:inline-block; border:1px solid #334155; border-radius:999px; padding:2px 8px; color:#93c5fd; font-size:11px; margin:2px 4px 2px 0; }
+  .modal pre { background:var(--bg-0); border:1px solid var(--line); border-radius:6px; padding:10px; font-size:12px; white-space:pre-wrap; word-break:break-all; color:var(--ink-2); overflow:auto; }
+  .modal .x { float:right; cursor:pointer; color:var(--muted); font-size:20px; line-height:1; }
+  .modal .x:hover { color:var(--ink); }
+  .kv { color:var(--muted); font-size:12px; margin:2px 0; }
+  .kv b { color:var(--ink); font-weight:600; }
+  .hint { color:var(--muted); font-size:12px; line-height:1.55; }
+  .pill {
+    display:inline-block; border:1px solid var(--line-2); border-radius:999px;
+    padding:3px 10px; color:#93c5fd; font-size:11px; margin:2px 4px 2px 0;
+    background:rgba(59,130,246,.08); transition: all .15s ease;
+  }
+  .pill:hover { border-color:rgba(59,130,246,.45); background:rgba(59,130,246,.16); }
 </style>
 </head>
 <body>
@@ -65,11 +155,12 @@
   <button data-tab="iter" onclick="switchTab('iter')">⑤ 迭代 · 数据驱动</button>
   <button data-tab="rag" onclick="switchTab('rag')">⑥ 知识库 · RAG</button>
   <button data-tab="anno" onclick="switchTab('anno')">⑦ 标注 · 回灌</button>
-  <button data-tab="agent" onclick="switchTab('agent')">⑧ Agent · 自动迭代</button>
+  <button data-tab="agent" onclick="switchTab('agent')">⑧ 自动迭代脚本</button>
   <button data-tab="custom" onclick="switchTab('custom')">⑨ 通用训练 Agent</button>
   <button data-tab="chat" onclick="switchTab('chat')">⑩ 对话 · LangChain Agent</button>
   <button data-tab="local-agent" onclick="switchTab('local-agent')">⑪ 本地Agent · ReAct</button>
-  <button data-tab="settings" onclick="switchTab('settings')">⑫ 设置 · API Key</button>
+  <button data-tab="product" onclick="switchTab('product')">⑫ 产品 · 交付</button>
+  <button data-tab="settings" onclick="switchTab('settings')">⑬ 设置 · API Key</button>
 </nav>
 
 <main>
@@ -358,7 +449,7 @@
   <!-- ⑧ Agent -->
   <section id="page-agent" class="page">
     <div class="card">
-      <h2>⑧ Agent · 自动迭代机器人</h2>
+      <h2>⑧ 自动迭代脚本</h2>
       <p class="desc">监控标注闭环状态，按“已完成标注 → 回灌 → 训练 → 评测 → 生成新标注任务”的顺序自动推进；没有待推进标注任务或无新 gap 时自动停止。</p>
       <div class="row">
         <div class="fld"><label>父数据集</label><select id="ag-parent" style="min-width:220px"></select></div>
@@ -498,11 +589,12 @@
   <section id="page-local-agent" class="page">
     <div class="card">
       <h2>本地 ReAct Agent（自训练模型）</h2>
-      <p class="desc">使用自己训练的模型 + ReAct 文本模式实现工具调用，不依赖任何外部 API。支持 RAG 检索/模型查询/血缘追踪/评测报告 四个工具。</p>
+      <p class="desc">本地自训练模型驱动的 ReAct 循环 v2：输入安全校验（Prompt 注入拦截）→ 三层记忆（工作记忆/历史压缩/RAG 检索）→ 四级解析（正则 → JSON 修复 → 结构化 → 关键词兜底）→ 工具沙箱（20s 超时/结果截断清洗）→ 循环控制（重复打转/最大轮次终止）。支持会话中途热切换模型（保留会话记忆），对话区完整展示思考-行动-观察轨迹与结束原因徽章。全程不依赖任何外部 API。</p>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
         <label style="font-size:13px;">选择模型:</label>
         <select id="la-model" style="min-width:280px;"><option value="">-- 使用最新模型 --</option></select>
         <button onclick="laCreateSession()" class="btn">创建会话</button>
+        <button onclick="laSwitchModel()" class="btn" style="background:#7c3aed;" title="会话中途切换底层模型，保留会话记忆">热切换模型</button>
         <select id="la-session" style="min-width:200px;"><option value="">-- 选择会话 --</option></select>
         <button onclick="laLoadSessions()" class="btn" style="background:#6c757d;">刷新</button>
         <span id="la-status" style="font-size:12px;color:#888;"></span>
@@ -517,12 +609,83 @@
         <button onclick="laSendChat()" class="btn">发送</button>
       </div>
     </div>
+    <div class="card">
+      <h2>Agent 测评 · 轨迹统计</h2>
+      <p class="desc">基于本页对话自动落盘的运行轨迹（data/agent_eval/traces.jsonl）：工具调用率（Agent 能力利用率）、模型决策占比（非关键词兜底）、JSON 修复次数（7B 输出崩坏被挽救）、工具失败（超时/异常）、安全拦截（Prompt 注入）、结束原因分布（completed/兜底/超限/打转/拦截），支持按模型分组对比。全链路事件（prompt 快照/原始输出/工具耗时）落盘 events.jsonl，可作 7B Agent 微调数据集。</p>
+      <button onclick="laLoadEvalStats()" class="btn" style="background:#6c757d;margin-bottom:10px;">刷新统计</button>
+      <div id="la-eval-stats"><p style="color:#999;">暂无统计数据。</p></div>
+    </div>
   </section>
 
-  <!-- ⑫ 设置 -->
+  <!-- ⑫ 产品 · 交付 -->
+  <section id="page-product" class="page">
+    <div class="card">
+      <h2>⑫ 产品 · 交付总览</h2>
+      <p class="desc">模型微调 + Agent 双产品线交付看板。微调产品 = 平台训练产出的领域模型（可试用、可追溯血缘、含评测指标）；Agent 产品 = 带工具/技能/知识库/双层记忆的 LangChain 智能助手服务。</p>
+      <div id="prod-stats" class="row"></div>
+    </div>
+    <div class="card">
+      <h2>模型产品 · 微调交付物</h2>
+      <p class="desc">每个训练完成的模型即一件交付物：基座/数据集/方法/评测指标全量可追溯，点击"试用"到下方试用台体验。</p>
+      <div id="prod-models"></div>
+    </div>
+    <div class="card">
+      <h2>上传模型包 · 自有/第三方交付物</h2>
+      <p class="desc">上传 HuggingFace 主流格式模型包（PEFT LoRA adapter 或全量 safetensors），自动校验结构、解压注册到模型仓库，即可在试用台选用。zip 内需含 adapter_config.json + adapter_model.safetensors（LoRA）或 config.json + model*.safetensors（全量）。</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px;">
+        <div class="fld"><label>模型包 zip（PEFT/HF 格式）</label>
+          <input id="prod-upload-file" type="file" accept=".zip" style="min-width:260px;"></div>
+        <div class="fld"><label>model_id（可选，留空自动生成）</label><input id="prod-upload-id" size="22" placeholder="如 my-gaokao-expert"></div>
+        <div class="fld"><label>领域方向/显示名（可选）</label><input id="prod-upload-name" size="22" placeholder="如 高考志愿专家"></div>
+        <button class="go" onclick="prodUpload()">上传并注册</button>
+        <button class="go ghost" onclick="loadProducts()">刷新货架</button>
+      </div>
+      <div id="prod-upload-out" class="out" style="display:none;"></div>
+      <div id="prod-upload-bar" style="height:6px;background:#1e293b;border-radius:3px;margin-top:8px;display:none;">
+        <div id="prod-upload-fill" style="height:100%;width:0;background:#2563eb;border-radius:3px;transition:width .2s;"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Agent 产品 · 服务能力</h2>
+      <p class="desc">LangChain Agent 服务清单：内置工具 + 注册技能 + MCP 扩展 + RAG 知识库；短期记忆(Checkpointer/thread_id) + 长期记忆(Store/按模型隔离)。</p>
+      <div id="prod-agent"></div>
+    </div>
+    <div class="card">
+      <h2>MCP 扩展 · 外部工具服务器管理</h2>
+      <p class="desc">注册 Model Context Protocol 服务器，把外部工具动态接入 Agent。注册时执行真协议握手（JSON-RPC 2.0 over stdio：initialize → tools/list），发现的服务器工具会逐一包装为 LangChain Tool（命名 mcp_服务器名__工具名），Agent 对话中可直接调用（tools/call）。配置持久化在 data/mcp_servers.json，重启不丢失。</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px;">
+        <div class="fld"><label>服务器名称</label><input id="mcp-name" size="16" placeholder="如 fetch"></div>
+        <div class="fld"><label>启动命令（stdio）</label><input id="mcp-command" size="34" placeholder="如 python -m mcp_server_fetch"></div>
+        <div class="fld"><label>描述（可选）</label><input id="mcp-desc" size="20" placeholder="如 网页抓取工具"></div>
+        <button class="go" onclick="mcpRegister()">注册并发现工具</button>
+        <button class="go ghost" onclick="loadProducts()">刷新列表</button>
+      </div>
+      <div id="mcp-register-out" class="out" style="display:none;margin-bottom:10px;"></div>
+      <div id="mcp-list"></div>
+    </div>
+    <div class="card">
+      <h2>产品试用台</h2>
+      <p class="desc">选择一件模型产品（或默认云端模型）创建会话，直接体验最终交付效果。记忆按模型隔离：不同模型的试用互不串扰。</p>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+        <label style="font-size:13px;color:#94a3b8;">产品模型:</label>
+        <select id="prod-model" style="min-width:280px;"><option value="">-- 云端默认模型 (DeepSeek) --</option></select>
+        <button onclick="prodCreate()" class="go">创建试用会话</button>
+        <span id="prod-status" style="font-size:12px;color:#888;"></span>
+      </div>
+      <div id="prod-messages" style="height:300px;overflow-y:auto;border:1px solid #334155;border-radius:6px;padding:12px;background:#0b1220;margin-bottom:10px;">
+        <p style="color:#999;text-align:center;">选择模型产品并创建会话，输入问题开始试用。</p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input id="prod-input" size="50" placeholder="例如：我是河南理科587分，推荐院校 / 你还记得我什么？" onkeydown="if(event.key==='Enter')prodSend()">
+        <button onclick="prodSend()" class="go">发送</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑬ 设置 -->
   <section id="page-settings" class="page">
     <div class="card">
-      <h2>⑫ API Key 配置</h2>
+      <h2>⑬ API Key 配置</h2>
       <p class="desc">配置评测裁判和对话端点所需的 API Key。Key 保存到服务器 .env 文件，长期持久化，重启不丢失。配置后立即生效，无需重启服务。</p>
       <div class="row" style="margin-bottom:12px;">
         <button class="go" onclick="loadApiKeys()">刷新状态</button>
@@ -560,7 +723,8 @@ function switchTab(tab){
   else if(tab==="custom"){ customAgentStatus(); }
   else if(tab==="eval"){ loadTasks(tab); loadBreadthReports(); }
   else if(tab==="chat"){ loadChatModels(); loadSessions(); }
-  else if(tab==="local-agent"){ laLoadModels(); laLoadSessions(); }
+  else if(tab==="local-agent"){ laLoadModels(); laLoadSessions(); laLoadEvalStats(); }
+  else if(tab==="product"){ loadProducts(); }
   else if(tab==="settings"){ loadApiKeys(); }
   else { loadTasks(tab); }
 }
@@ -2009,6 +2173,298 @@ function renderImpactReports(rows, el){
   el.innerHTML=html;
 }
 
+// ---------------------------------------------------------------------------
+// ⑫ 产品 · 交付：模型微调 + Agent 双产品线看板
+// ---------------------------------------------------------------------------
+let prodSessionId = "";
+function prodStatBlock(label, value, sub){
+  return `<div class="fld" style="min-width:150px;background:#0b1220;border:1px solid #1e293b;border-radius:8px;padding:12px 16px;">
+    <div style="font-size:22px;font-weight:700;color:#93c5fd;">${value}</div>
+    <div style="font-size:12px;color:#94a3b8;">${label}${sub?` · ${sub}`:""}</div></div>`;
+}
+async function loadProducts(){
+  const [modelsR, toolsR, skillsR, mcpR, ragR] = await Promise.all([
+    fetch("/models").then(r=>r.json()).catch(()=>[]),
+    fetch("/agent/tools").then(r=>r.json()).catch(()=>({available:false,tools:[]})),
+    fetch("/skills").then(r=>r.json()).catch(()=>[]),
+    fetch("/mcp/servers").then(r=>r.json()).catch(()=>[]),
+    fetch("/rag/stats").then(r=>r.json()).catch(()=>({})),
+  ]);
+  // 拆分训练记录与评测记录，构建 model_id -> 最新评测指标
+  const trains = [], evalMap = {};
+  for(const r of (modelsR||[])){
+    if(r.type==="eval"){
+      const prev = evalMap[r.model_id];
+      if(!prev || (r.registered_at||0) >= (prev.registered_at||0)) evalMap[r.model_id] = r;
+    } else if(r.model_id){ trains.push(r); }
+  }
+  const seen = new Set();
+  const uniq = trains.filter(r=>!seen.has(r.model_id) && seen.add(r.model_id));
+  let bestJudge = null;
+  for(const r of Object.values(evalMap)){
+    const j = (r.metrics||{}).judge_avg ?? (r.metrics||{}).judge_overall;
+    if(j!=null && (bestJudge==null || j>bestJudge)) bestJudge = j;
+  }
+  // 1) 总览统计
+  const ragCount = ragR.chunks ?? ragR.total ?? ragR.documents ?? "-";
+  document.getElementById("prod-stats").innerHTML =
+    prodStatBlock("微调模型产品", uniq.length, "可试用") +
+    prodStatBlock("最佳评测分", bestJudge!=null ? Number(bestJudge).toFixed(2) : "--", "LLM-as-Judge") +
+    prodStatBlock("Agent 工具", (toolsR.tools||[]).length, toolsR.available?"可用":"未就绪") +
+    prodStatBlock("技能 / MCP", `${(skillsR||[]).length} / ${(mcpR||[]).length}`) +
+    prodStatBlock("RAG 知识块", ragCount, "知识库");
+  // 2) 模型产品卡
+  const box = document.getElementById("prod-models");
+  const sel = document.getElementById("prod-model");
+  const keep = sel.value;
+  sel.innerHTML = '<option value="">-- 云端默认模型 (DeepSeek) --</option>';
+  if(!uniq.length){
+    box.innerHTML = '<p class="hint">暂无模型产品。完成②训·训练后，产物将自动登记到此货架。</p>';
+  } else {
+    box.innerHTML = uniq.map(r=>{
+      const ev = (evalMap[r.model_id]||{}).metrics || {};
+      const judge = ev.judge_avg ?? ev.judge_overall;
+      const rouge = ev.rouge_l_f ?? ev.rouge_avg ?? ev.rouge;
+      const bleu = ev.bleu_1 ?? ev.bleu;
+      const ts = r.registered_at ? new Date(r.registered_at*1000).toLocaleString() : "--";
+      return `<div style="border:1px solid #1e293b;border-radius:8px;padding:12px 14px;margin-bottom:10px;background:#0b1220;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <b style="color:#e2e8f0;">${esc(r.model_id)}</b>
+          <span>
+            <button class="go" style="padding:5px 12px;font-size:12px;" onclick="prodTry('${esc(r.model_id)}')">试用</button>
+            <button class="go ghost" style="padding:5px 12px;font-size:12px;" onclick="prodLineage('${esc(r.model_id)}',this)">血缘</button>
+          </span>
+        </div>
+        <div class="kv" style="margin-top:6px;">
+          基座 <b>${esc(r.base||"--")}</b> · 数据集 <b>${esc(r.dataset_id||"--")}</b> · 方法 <b>${esc(r.method||r.mode||"--")}</b> · 交付 ${esc(ts)}
+          ${judge!=null?` · <span style="color:#4ade80;">Judge ${Number(judge).toFixed(2)}</span>`:""}
+          ${rouge!=null?` · ROUGE-L ${Number(rouge).toFixed(3)}`:""}
+          ${bleu!=null?` · BLEU-1 ${Number(bleu).toFixed(3)}`:""}
+        </div>
+        <div class="out" id="prod-lg-${esc(r.model_id)}" style="display:none;margin-top:8px;"></div>
+      </div>`;
+    }).join("");
+    for(const r of uniq){
+      const opt = document.createElement("option");
+      opt.value = r.model_id; opt.textContent = r.model_id;
+      sel.appendChild(opt);
+    }
+    if(keep) sel.value = keep;
+  }
+  // 3) Agent 产品能力
+  const agentBox = document.getElementById("prod-agent");
+  const toolPills = (toolsR.tools||[]).map(t=>`<span class="pill" title="${esc(t.description||"")}">${esc(t.name)}</span>`).join("");
+  const skillPills = (skillsR||[]).map(s=>`<span class="pill" title="${esc(s.description||"")}">${esc(s.name)}</span>`).join("") || '<span class="hint">暂无注册技能</span>';
+  const mcpPills = (mcpR||[]).map(m=>`<span class="pill">${esc(m.name)}</span>`).join("") || '<span class="hint">暂无 MCP 扩展</span>';
+  agentBox.innerHTML = `
+    <div class="kv" style="margin-bottom:6px;"><b>内置工具</b>（RAG 检索 / 模型血缘 / 联网搜索 / 长期记忆 recall·remember 等）：</div>
+    <div>${toolPills || '<span class="hint">Agent 未就绪（需安装 agent 依赖）</span>'}</div>
+    <div class="kv" style="margin:10px 0 6px;"><b>注册技能</b>：</div><div>${skillPills}</div>
+    <div class="kv" style="margin:10px 0 6px;"><b>MCP 服务器</b>：</div><div>${mcpPills}</div>
+    <div class="kv" style="margin-top:10px;">双层记忆：短期 = Checkpointer(thread_id=会话)；长期 = Store(namespace=模型域，跨模型隔离)。</div>`;
+  // 4) MCP 扩展管理列表
+  renderMcpList(mcpR||[]);
+}
+function renderMcpList(servers){
+  const box = document.getElementById("mcp-list");
+  if(!box) return;
+  if(!servers.length){
+    box.innerHTML = '<p class="hint">暂无 MCP 服务器。在上方填写名称与启动命令注册，如 "fetch" + "python -m mcp_server_fetch"。</p>';
+    return;
+  }
+  box.innerHTML = servers.map(s=>{
+    const st = s.status==="loaded" ? '<span style="color:#4ade80;">● 已连接</span>'
+             : s.status==="error"   ? '<span style="color:#f87171;">● 连接失败</span>'
+             : '<span style="color:#facc15;">● 已登记</span>';
+    const toolPills = (s.tools||[]).map(t=>`<span class="pill" title="${esc(t.description||"")}">${esc(t.name)}</span>`).join("") || '<span class="hint">未发现工具</span>';
+    const ts = s.registered_at ? new Date(s.registered_at*1000).toLocaleString() : "--";
+    return `<div style="border:1px solid #1e293b;border-radius:8px;padding:12px 14px;margin-bottom:10px;background:#0b1220;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <span><b style="color:#e2e8f0;">${esc(s.name)}</b> ${st}</span>
+        <span>
+          <button class="go ghost" style="padding:5px 12px;font-size:12px;" onclick="mcpTest('${esc(s.name)}',this)">测试连接</button>
+          <button class="go ghost" style="padding:5px 12px;font-size:12px;color:#f87171;border-color:#7f1d1d;" onclick="mcpDelete('${esc(s.name)}')">删除</button>
+        </span>
+      </div>
+      <div class="kv" style="margin-top:6px;">命令 <code style="color:#93c5fd;">${esc(s.command)}</code>${s.description?` · ${esc(s.description)}`:""} · 注册于 ${esc(ts)} · 工具数 ${(s.tools||[]).length}</div>
+      ${s.error?`<div class="kv" style="margin-top:4px;color:#f87171;">错误：${esc(s.error)}</div>`:""}
+      <div class="kv" style="margin:8px 0 4px;">Agent 工具（mcp_${esc(s.name)}__*）：</div>
+      <div>${toolPills}</div>
+      <div class="out" id="mcp-test-${esc(s.name)}" style="display:none;margin-top:8px;"></div>
+    </div>`;
+  }).join("");
+}
+async function mcpRegister(){
+  const name = document.getElementById("mcp-name").value.trim();
+  const command = document.getElementById("mcp-command").value.trim();
+  const desc = document.getElementById("mcp-desc").value.trim();
+  const out = document.getElementById("mcp-register-out");
+  if(!name || !command){ out.style.display=""; out.textContent = "请填写服务器名称和启动命令。"; return; }
+  out.style.display=""; out.textContent = "注册中…正在启动 MCP 服务器并握手（initialize -> tools/list），最长约 30 秒。";
+  try{
+    const r = await fetch("/mcp/register",{
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({name, command, description:desc})
+    }).then(r=>r.json());
+    if(r.detail){ out.innerHTML = `注册失败：${esc(r.detail)}`; return; }
+    if(r.status==="loaded"){
+      out.innerHTML = `注册成功：<b style="color:#4ade80;">${esc(r.name)}</b> 握手完成，发现 <b>${(r.tools||[]).length}</b> 个工具，已包装进 Agent。`;
+    } else {
+      out.innerHTML = `已登记 <b style="color:#facc15;">${esc(r.name)}</b>，但连接失败：${esc(r.error||"未知错误")}。配置已保存，可修复命令后点"测试连接"。`;
+    }
+    await loadProducts();
+  }catch(e){ out.textContent = "注册请求失败: " + e; }
+}
+async function mcpTest(name, btn){
+  const out = document.getElementById("mcp-test-" + name);
+  if(out){ out.style.display=""; out.textContent = "测试中…重新握手并刷新工具列表。"; }
+  if(btn){ btn.disabled = true; }
+  try{
+    const r = await fetch("/mcp/test",{
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({name})
+    }).then(r=>r.json());
+    if(r.detail){ if(out) out.textContent = "测试失败: " + r.detail; return; }
+    await loadProducts();  // 先等列表重渲染完，再写结果（否则会被覆盖）
+    const o2 = document.getElementById("mcp-test-" + name);
+    if(o2){
+      o2.style.display="";
+      o2.innerHTML = r.status==="loaded"
+        ? `连接成功，发现 <b style="color:#4ade80;">${(r.tools||[]).length}</b> 个工具。`
+        : `连接失败：${esc(r.error||"未知错误")}`;
+    }
+  }catch(e){ if(out) out.textContent = "测试请求失败: " + e; }
+  finally{ if(btn) btn.disabled = false; }
+}
+async function mcpDelete(name){
+  if(!confirm(`确认删除 MCP 服务器 "${name}"？其 Agent 工具将同时移除。`)) return;
+  try{
+    const r = await fetch("/mcp/servers/" + encodeURIComponent(name), {method:"DELETE"}).then(r=>r.json());
+    if(r.detail){ alert("删除失败: " + r.detail); return; }
+    loadProducts();
+  }catch(e){ alert("删除请求失败: " + e); }
+}
+function prodTry(modelId){
+  const sel = document.getElementById("prod-model");
+  sel.value = modelId;
+  document.querySelector("#page-product .card:last-child").scrollIntoView({behavior:"smooth"});
+}
+// 上传模型包：FormData + XMLHttpRequest 进度条
+function prodUpload(){
+  const fi = document.getElementById("prod-upload-file");
+  if(!fi.files || !fi.files[0]){ alert("请先选择模型包 zip"); return; }
+  const fd = new FormData();
+  fd.append("file", fi.files[0]);
+  const mid = document.getElementById("prod-upload-id").value.trim();
+  const nm = document.getElementById("prod-upload-name").value.trim();
+  if(mid) fd.append("model_id", mid);
+  if(nm) fd.append("name", nm);
+  const out = document.getElementById("prod-upload-out");
+  const bar = document.getElementById("prod-upload-bar");
+  const fill = document.getElementById("prod-upload-fill");
+  out.style.display=""; bar.style.display=""; fill.style.width="0";
+  out.textContent = "上传中...（" + (fi.files[0].size/1024/1024).toFixed(1) + " MB）";
+  const xhr = new XMLHttpRequest();
+  xhr.upload.onprogress = function(e){
+    if(e.lengthComputable){
+      const pct = Math.round(e.loaded/e.total*100);
+      fill.style.width = pct + "%";
+      out.textContent = "上传中 " + pct + "%（" + (e.loaded/1024/1024).toFixed(1) + "/" + (e.total/1024/1024).toFixed(1) + " MB）";
+    }
+  };
+  xhr.onload = function(){
+    try{
+      const d = JSON.parse(xhr.responseText);
+      if(d.model_id){
+        fill.style.width="100%";
+        out.innerHTML =
+          `<b style="color:#4ade80;">✓ 上传成功</b> model_id=<b>${esc(d.model_id)}</b> · 格式=${esc(d.format)} · 基座=${esc(d.base)} · ${d.files}文件 ${d.size_mb}MB` +
+          (d.domain_direction?` · ${esc(d.domain_direction)}`:"") +
+          `\n\n<b>下一步（vLLM 加载后即可在试用台选用）：</b>\n${esc(d.hint||"")}` +
+          `\n\n提示：试用台下拉框「刷新货架」后即出现 ${esc(d.model_id)}。`;
+        document.getElementById("prod-upload-file").value="";
+        document.getElementById("prod-upload-id").value="";
+        loadProducts(); // 自动刷新货架+试用台下拉
+      } else {
+        out.textContent = "上传失败: " + (d.detail || JSON.stringify(d).slice(0,300));
+        fill.style.width="0";
+      }
+    }catch(e){
+      out.textContent = "响应解析失败(" + xhr.status + "): " + xhr.responseText.slice(0,300);
+      fill.style.width="0";
+    }
+  };
+  xhr.onerror = function(){
+    out.textContent = "网络错误，上传失败";
+    fill.style.width="0";
+  };
+  xhr.open("POST", "/models/upload");
+  xhr.send(fd);
+}
+async function prodLineage(modelId, btn){
+  const out = document.getElementById("prod-lg-"+modelId);
+  if(!out) return;
+  if(out.style.display!=="none"){ out.style.display="none"; return; }
+  out.style.display = "";
+  out.textContent = "加载血缘…";
+  try{
+    const d = await (await fetch("/models/"+encodeURIComponent(modelId)+"/lineage")).json();
+    const meta = d.meta||{}, tr = d.train_record||{};
+    const evals = (d.evals||[]).map(e=>{const m=e.metrics||{};return `Judge=${m.judge_avg??m.judge_overall??"--"} ROUGE-L=${m.rouge_l_f??m.rouge_avg??"--"} BLEU-1=${m.bleu_1??"--"} report=${e.report_id}`;}).join("\n") || "无评测记录";
+    out.textContent =
+      `模型: ${d.model_id}\n基座: ${meta.base||tr.base||"--"}  方法: ${meta.method||tr.method||"--"}\n`+
+      `数据集: ${meta.dataset_id||tr.dataset_id||"--"}  父模型: ${meta.parent_model_id||"--"}\n`+
+      `领域方向: ${meta.domain_direction||"--"}  身份校验: ${meta.identity_validation||"not_checked"}\n`+
+      `关联评测:\n${evals}`;
+  }catch(e){ out.textContent = "血缘加载失败: "+e.message; }
+}
+async function prodCreate(){
+  const modelId = document.getElementById("prod-model").value;
+  const body = {memory_window:10};
+  if(modelId) body.model_id = modelId;
+  document.getElementById("prod-status").textContent = "创建会话中…";
+  try{
+    const d = await post("/chat/session", body);
+    if(d.session_id){
+      prodSessionId = d.session_id;
+      document.getElementById("prod-status").textContent =
+        "试用会话：" + d.session_id.slice(0,8) + (modelId ? " | 产品模型: "+modelId : " | 云端默认模型");
+      document.getElementById("prod-messages").innerHTML =
+        '<p style="color:#999;text-align:center;">会话已创建，输入问题开始试用。</p>';
+    } else {
+      document.getElementById("prod-status").textContent = "创建失败: "+(d.detail||JSON.stringify(d).slice(0,120));
+    }
+  }catch(e){ document.getElementById("prod-status").textContent = "错误: "+e.message; }
+}
+function prodAppend(role, text, isTool){
+  const box = document.getElementById("prod-messages");
+  if(box.querySelector("p[style*='999']")) box.innerHTML="";
+  const div = document.createElement("div");
+  const color = role==="user" ? "#60a5fa" : isTool ? "#94a3b8" : "#e2e8f0";
+  const bg = role==="user" ? "#16233f" : isTool ? "#1e293b" : "#111c34";
+  const label = role==="user" ? "我" : isTool ? "工具" : "产品";
+  div.style.cssText = `margin:6px 0;padding:8px 12px;border-radius:8px;background:${bg};color:${color};`;
+  div.innerHTML = `<b>${label}：</b>${esc(text).replace(/\n/g,"<br>")}`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+async function prodSend(){
+  const input = document.getElementById("prod-input");
+  const msg = input.value.trim();
+  if(!msg || !prodSessionId){ alert("请先创建试用会话"); return; }
+  input.value = "";
+  prodAppend("user", msg);
+  document.getElementById("prod-status").textContent = "生成中...";
+  try{
+    const d = await post("/chat", {session_id:prodSessionId, message:msg});
+    if(d.answer) prodAppend("assistant", d.answer);
+    for(const t of (d.tool_calls||[])){
+      prodAppend("tool", `[${t.tool||t.name}] ${String(t.input||t.args||"").slice(0,80)} -> ${String(t.output||t.result||"").slice(0,150)}`, true);
+    }
+    document.getElementById("prod-status").textContent = "完成（backend: "+(d.backend||"-")+"）";
+  }catch(e){ document.getElementById("prod-status").textContent = "错误: "+e.message; }
+}
+
 refreshMode(); refreshDataSources(); refreshDatasets(); refreshModels(); ragCollections(); dpToggleSourceMode(); switchTab(initialTabFromUrl());
 setInterval(()=>{
   if(current==="agent") agentStatus();
@@ -2182,6 +2638,60 @@ function laAppend(role, text, isTool){
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
 }
+// 结束原因 -> [中文标签, 颜色]（对话徽章与统计分布共用）
+const LA_ER_META = {
+  "completed": ["正常完成", "#2e7d32"],
+  "keyword-fallback": ["关键词兜底", "#f9a825"],
+  "max_iterations": ["达最大轮次", "#e65100"],
+  "repeated": ["重复打转·终止", "#dc3545"],
+  "security_blocked": ["安全拦截·Prompt注入", "#7f1d1d"]
+};
+function laErBadge(er){
+  const meta = LA_ER_META[er] || [er || "未知", "#6c757d"];
+  return `<span style="background:${meta[1]};color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;">${esc(meta[0])}</span>`;
+}
+// 渲染 ReAct 轨迹：Thought -> Action -> Observation（模型决策/兜底 + JSON修复/工具失败/耗时标记）
+function laAppendTrace(toolCalls){
+  const box = document.getElementById("la-messages");
+  (toolCalls||[]).forEach((tc, idx)=>{
+    const isFallback = tc.source === "keyword-fallback";
+    const div = document.createElement("div");
+    div.style.cssText = "margin:6px 0;padding:8px 12px;border-radius:8px;background:#fffde7;border-left:3px solid #f9a825;";
+    const badges = [];
+    badges.push(isFallback
+      ? '<span style="background:#f9a825;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;">关键词兜底</span>'
+      : '<span style="background:#2e7d32;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;">模型决策</span>');
+    if(tc.repaired) badges.push('<span style="background:#7c3aed;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;">JSON已修复</span>');
+    if(tc.error) badges.push(`<span style="background:#dc3545;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;">工具失败:${esc(String(tc.error).slice(0,24))}</span>`);
+    if(tc.tool_latency_ms!=null) badges.push(`<span style="background:#475569;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;">工具 ${tc.tool_latency_ms}ms</span>`);
+    const thought = tc.thought
+      ? `<div style="color:#8d6e00;font-size:12px;margin-bottom:3px;"><b>Thought</b>：${esc(tc.thought).replace(/\n/g,"<br>")}</div>` : "";
+    div.innerHTML = `
+      <div style="font-size:11px;color:#b45309;margin-bottom:3px;">${badges.join(" ")} · 迭代 ${idx+1}</div>
+      ${thought}
+      <div style="color:#e65100;font-size:13px;"><b>Action</b>：<code>${esc(tc.action)}</code></div>
+      <div style="color:#6b7280;font-size:12px;margin-top:3px;max-height:110px;overflow-y:auto;"><b>Observation</b>：${esc(tc.observation||"").replace(/\n/g,"<br>")}</div>`;
+    box.appendChild(div);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+// 适配器热插拔：会话中途切换底层模型（保留会话记忆）
+async function laSwitchModel(){
+  const modelId = document.getElementById("la-model") ? document.getElementById("la-model").value : "";
+  if(!laSessionId){ alert("请先创建会话"); return; }
+  if(!modelId){ alert('请先在「选择模型」下拉框中选择目标模型'); return; }
+  document.getElementById("la-status").textContent = "热切换中...";
+  try{
+    const res = await fetch("/local_agent/switch_model", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({session_id:laSessionId, model_id:modelId})});
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.detail || JSON.stringify(d));
+    const swCount = (d.switch_history||[]).length;
+    document.getElementById("la-status").textContent = `已热切换: ${d.model_id.slice(0,25)} · 记忆保留${d.messages_kept}条 · 累计切换${swCount}次`;
+    laAppend("assistant", `[系统] 模型已热切换为 ${d.model_id}（会话记忆保留 ${d.messages_kept} 条，累计切换 ${swCount} 次），继续对话即用新模型推理。`);
+  }catch(e){
+    document.getElementById("la-status").textContent = "热切换失败: "+e.message;
+  }
+}
 async function laCreateSession(){
   const modelSel = document.getElementById("la-model");
   const modelId = modelSel ? modelSel.value : "";
@@ -2221,20 +2731,92 @@ async function laSendChat(){
   if(!msg || !laSessionId){ alert("请先创建会话"); return; }
   input.value = "";
   laAppend("user", msg);
-  document.getElementById("la-status").textContent = "思考中... (本地模型推理)";
+  document.getElementById("la-status").textContent = "思考中... (本地模型 ReAct 推理)";
   try{
     const res = await fetch("/local_agent/chat", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({session_id:laSessionId, message:msg})});
     const d = await res.json();
-    if(d.answer) laAppend("assistant", d.answer);
+    if(!res.ok) throw new Error(d.detail || JSON.stringify(d));
+    // 1) 先渲染 ReAct 轨迹（Thought -> Action -> Observation），再渲染结束原因徽章与最终回答
     if(d.tool_calls && d.tool_calls.length > 0){
-      for(const tc of d.tool_calls){
-        laAppend("tool", `[${tc.action}] -> ${tc.observation.slice(0,150)}`, true);
-      }
+      laAppendTrace(d.tool_calls);
     }
-    document.getElementById("la-status").textContent = `完成 (迭代${d.iterations||1}次)`;
+    if(d.end_reason){
+      const erDiv = document.createElement("div");
+      erDiv.style.cssText = "margin:4px 0;text-align:center;";
+      const extra = [];
+      if(d.repaired_actions) extra.push(`修复${d.repaired_actions}`);
+      if(d.tool_errors) extra.push(`工具失败${d.tool_errors}`);
+      erDiv.innerHTML = laErBadge(d.end_reason) + (extra.length ? ` <span style="color:#6c757d;font-size:11px;">${extra.join(" · ")}</span>` : "");
+      const box = document.getElementById("la-messages");
+      box.appendChild(erDiv);
+      box.scrollTop = box.scrollHeight;
+    }
+    if(d.answer) laAppend("assistant", d.answer);
+    // 2) 状态栏：迭代数 + 结束原因 + 修复/失败 + 耗时
+    const parts = [`迭代${d.iterations||0}次`];
+    if(d.end_reason && d.end_reason!=="completed") parts.push(d.end_reason);
+    if(d.repaired_actions) parts.push(`修复${d.repaired_actions}`);
+    if(d.tool_errors) parts.push(`失败${d.tool_errors}`);
+    if(d.latency_ms!=null) parts.push(`${d.latency_ms}ms`);
+    if(d.tool_calls && d.tool_calls.length) parts.push(`工具×${d.tool_calls.length}`);
+    document.getElementById("la-status").textContent = "完成 (" + parts.join(" · ") + ")";
+    laLoadEvalStats();
   }catch(e){
     document.getElementById("la-status").textContent = "错误: "+e.message;
     laAppend("assistant", "出错了: " + e.message);
+  }
+}
+async function laLoadEvalStats(){
+  const box = document.getElementById("la-eval-stats");
+  if(!box) return;
+  try{
+    const res = await fetch("/local_agent/eval/stats");
+    const d = await res.json();
+    if(!d.total_turns){
+      box.innerHTML = '<p style="color:#999;">暂无轨迹数据——先在上方创建会话对话几轮，统计自动生成。</p>';
+      return;
+    }
+    const pct = v => v==null ? "--" : (v*100).toFixed(1) + "%";
+    const cell = (val, label, sub) => `
+      <div style="min-width:140px;background:#0b1220;border:1px solid #1e293b;border-radius:8px;padding:12px 16px;">
+        <div style="font-size:20px;font-weight:700;color:#93c5fd;">${val}</div>
+        <div style="font-size:12px;color:#94a3b8;">${label}${sub?` · ${sub}`:""}</div>
+      </div>`;
+    const erChips = Object.entries(d.end_reasons||{}).map(([k,v])=>{
+      const meta = LA_ER_META[k] || [k, "#334155"];
+      return `<span style="background:${meta[1]};color:#fff;font-size:11px;padding:2px 10px;border-radius:10px;">${esc(meta[0])} × ${v}</span>`;
+    }).join(" ");
+    let modelRows = "";
+    if((d.per_model||[]).length){
+      modelRows = `<div style="margin-top:12px;overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <tr style="color:#94a3b8;text-align:left;">${["模型","轮数","工具调用率","兜底占比","修复","失败","平均耗时"].map(h=>`<th style="padding:6px 10px;border-bottom:1px solid #334155;">${h}</th>`).join("")}</tr>
+        ${d.per_model.map(m=>`<tr>
+          <td style="padding:6px 10px;border-bottom:1px solid #1e293b;color:#e2e8f0;">${esc(m.model_id)}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #1e293b;">${m.turns}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #1e293b;">${pct(m.tool_rate)}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #1e293b;">${pct(m.routed_rate)}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #1e293b;">${m.repaired_actions||0}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #1e293b;">${m.tool_errors||0}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #1e293b;">${m.avg_latency_ms!=null?m.avg_latency_ms+"ms":"--"}</td>
+        </tr>`).join("")}
+      </table></div>`;
+    }
+    box.innerHTML = `
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        ${cell(d.total_turns, "对话轮数", "已落盘轨迹")}
+        ${cell(pct(d.tool_call_rate), "工具调用率", "Agent 能力利用")}
+        ${cell(pct(d.model_driven_rate), "模型决策占比", "非关键词兜底")}
+        ${cell(d.avg_iterations??"--", "平均迭代", "ReAct 轮数")}
+        ${cell(d.avg_latency_ms!=null?d.avg_latency_ms+"ms":"--", "平均耗时", "每轮")}
+        ${cell(d.repaired_actions||0, "JSON修复", "7B崩坏挽救")}
+        ${cell(d.tool_errors||0, "工具失败", "超时/异常")}
+        ${cell(d.security_blocks||0, "安全拦截", "Prompt注入")}
+      </div>
+      ${erChips?`<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><span style="font-size:12px;color:#94a3b8;">结束原因分布：</span>${erChips}</div>`:""}
+      ${modelRows}
+      <p style="color:#94a3b8;font-size:12px;margin-top:10px;">${esc(d.note||"")} · 轨迹文件：<code>${esc(d.trace_store||"")}</code> · 事件日志：<code>${esc(d.event_store||"")}</code></p>`;
+  }catch(e){
+    box.innerHTML = '<p style="color:#dc3545;">加载失败: ' + e.message + '</p>';
   }
 }
 

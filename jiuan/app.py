@@ -8,7 +8,7 @@ import json
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 from . import registry, store
@@ -17,7 +17,7 @@ from .pipeline import evaluate as evaluate_pipeline
 from .pipeline import impact as impact_pipeline
 from .pipeline import rag_backend
 from . import annotation as annotate
-from .common import DATASETS, ROOT, mock_mode
+from .common import DATASETS, MODELS, ROOT, mock_mode
 from .schemas import (
     AgentStartReq,
     AnnotationCommitReq,
@@ -32,6 +32,8 @@ from .schemas import (
     ImpactValidationReq,
     InferReq,
     McpRegisterReq,
+    McpTestReq,
+    LocalAgentSwitchReq,
     AnnotationSaveReq,
     AnnotationWebhookReq,
     CustomAgentPlanReq,
@@ -516,6 +518,133 @@ def model_lineage(model_id: str):
     return registry.lineage(model_id)
 
 
+@app.post("/models/upload")
+async def model_upload(
+    file: UploadFile = File(..., description="模型包 zip（PEFT adapter 或 HF 全量，HuggingFace 标准格式）"),
+    model_id: str = Form("", description="自定义模型ID；留空则用文件名生成"),
+    name: str = Form("", description="显示名/领域方向，如「高考志愿专家」"),
+):
+    """上传自有/第三方模型交付包，注册到平台模型仓库后可直接推理与 Agent 对话。
+
+    支持两种 HuggingFace 主流交付格式（与广大社区交付包一致）：
+    1. PEFT LoRA adapter：zip 内含 adapter_config.json + adapter_model.safetensors
+       （此平台训练产物的 weights/ 即此格式，HuggingFace Hub 上多数 LoRA 也是）
+    2. HF 全量模型：zip 内含 config.json + model.safetensors（或分片 model-00001-of-*）
+
+    解压到 data/models/<model_id>/weights/，写 meta.json，登记血缘；
+    上传后需在 vLLM 侧 `--lora-modules <model_id>=<path>`（LoRA）或
+    `vllm serve <path>`（全量）加载，Agent/推理即可按 model_id 调用。
+    """
+    import zipfile
+    import io
+    import time
+    import uuid
+
+    # 0. 校验文件类型与大小（限 4GB，覆盖常见模型包）
+    if not file.filename or not file.filename.lower().endswith(".zip"):
+        raise HTTPException(400, "请上传 .zip 格式的模型包")
+    raw = await file.read()
+    if len(raw) < 200:
+        raise HTTPException(400, "文件过小，疑似空包")
+    if len(raw) > 4 * 1024 ** 3:
+        raise HTTPException(400, "包超过 4GB 限制")
+
+    # 1. 读 zip，校验结构 + 防路径遍历
+    try:
+        zf = zipfile.ZipFile(io.BytesIO(raw))
+    except zipfile.BadZipFile as exc:
+        raise HTTPException(400, f"zip 解析失败: {exc}") from exc
+    names = [n for n in zf.namelist() if not n.endswith("/")]
+    if not names:
+        raise HTTPException(400, "zip 为空")
+    # 安全：禁止绝对路径/.. 上跳
+    bad = [n for n in names if n.startswith("/") or ".." in n]
+    if bad:
+        raise HTTPException(400, f"zip 含不安全路径: {bad[:3]}")
+
+    # 统一为顶层文件（zip 可能套一层目录）
+    # 找公共前缀目录
+    top_dirs = {n.split("/")[0] for n in names if "/" in n}
+    prefix = next(iter(top_dirs)) + "/" if len(top_dirs) == 1 and all(n.startswith(next(iter(top_dirs)) + "/") for n in names) else ""
+    rel_names = [n[len(prefix):] if n.startswith(prefix) else n for n in names]
+
+    # 2. 判定格式（必须有核心权重文件之一）
+    lower = {n.lower() for n in rel_names}
+    is_peft = "adapter_config.json" in lower and any(
+        n.endswith("adapter_model.safetensors") or n.endswith("adapter_model.bin") for n in lower
+    )
+    is_full = "config.json" in lower and any(
+        n.startswith("model") and (n.endswith(".safetensors") or n.endswith(".bin")) for n in lower
+    )
+    if not (is_peft or is_full):
+        raise HTTPException(
+            400,
+            "未识别为合法模型包。PEFT 需含 adapter_config.json + adapter_model.safetensors；"
+            "全量需含 config.json + model*.safetensors",
+        )
+
+    # 3. 生成 model_id + 解压目录
+    mid = (model_id or "").strip() or f"upload-{time.strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:4]}"
+    # 防 model_id 路径注入
+    if "/" in mid or "\\" in mid or ".." in mid:
+        raise HTTPException(400, "model_id 含非法字符")
+    out_dir = MODELS / mid
+    if out_dir.exists():
+        raise HTTPException(409, f"model_id 已存在: {mid}，请改名或先删除")
+    weights_dir = out_dir / "weights"
+    weights_dir.mkdir(parents=True, exist_ok=True)
+
+    # 4. 解压到 weights/
+    for n, rel in zip(names, rel_names):
+        target = weights_dir / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with zf.open(n) as src, open(target, "wb") as dst:
+            dst.write(src.read())
+
+    # 5. 读 adapter_config / config 抽取基座信息
+    base = ""
+    domain = name.strip()
+    try:
+        if is_peft:
+            cfg = json.loads((weights_dir / "adapter_config.json").read_text(encoding="utf-8"))
+            base = cfg.get("base_model_name_or_path") or cfg.get("base_model_name") or ""
+        else:
+            cfg = json.loads((weights_dir / "config.json").read_text(encoding="utf-8"))
+            base = cfg.get("_name_or_path") or cfg.get("model_type") or ""
+    except Exception:
+        pass
+
+    # 6. 写 meta.json + 注册血缘
+    meta = {
+        "model_id": mid,
+        "base": base or "unknown",
+        "mode": "upload",  # 区分平台训练产物 vs 用户上传
+        "backend": "vllm",
+        "method": "lora" if is_peft else "full",
+        "dataset_id": "",
+        "domain_direction": domain,
+        "uploaded_at": time.time(),
+        "weights_dir": str(weights_dir),
+    }
+    (out_dir / "meta.json").write_text(
+        json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    registry.register_model(meta)
+
+    return {
+        "model_id": mid,
+        "format": "peft-lora" if is_peft else "hf-full",
+        "base": base or "unknown",
+        "domain_direction": domain,
+        "files": len(rel_names),
+        "size_mb": round(len(raw) / 1024 / 1024, 2),
+        "artifact_path": str(weights_dir),
+        "hint": ("已注册。请在 vLLM 侧加载后即可在 Agent/推理中选用此 model_id。"
+                 "LoRA: vllm serve <base> --lora-modules {mid}={path}".format(mid=mid, path=weights_dir) if is_peft
+                 else "全量模型: vllm serve {path}".format(path=weights_dir)),
+    }
+
+
 @app.get("/tasks/{task_id}")
 def task_detail(task_id: str):
     t = store.get_task(task_id)
@@ -536,14 +665,104 @@ def chat_available():
 
 @app.post("/chat/session")
 def chat_create_session(req: ChatCreateReq):
-    """创建对话会话，指定系统提示词、关联模型和滑动窗口大小。"""
+    """创建对话会话，指定系统提示词、关联模型和滑动窗口大小。
+
+    双层记忆：短期=RAM 滑动窗口；长期=SQLite（scope 域共享用户事实，
+    resume_session_id 可在平台重启后恢复历史会话上下文）。
+    """
     if not langchain_agent.available():
         raise HTTPException(503, "LangChain 未安装，请运行 pip install -r requirements-agent.txt")
     return langchain_agent.create_session(
         system_prompt=req.system_prompt,
         model_id=req.model_id,
         memory_window=req.memory_window,
+        scope=req.scope,
+        resume_session_id=req.resume_session_id,
     )
+
+
+# ---------------------------------------------------------------------------
+# Agent 记忆管理（短期 RAM + 长期 SQLite）
+# ---------------------------------------------------------------------------
+
+@app.get("/chat/memory/{session_id}")
+def chat_memory(session_id: str):
+    """查看会话的双层记忆状态：短期窗口 + 模型域长期事实（LangGraph Store）。"""
+    from . import memory_store
+
+    session = langchain_agent.get_session(session_id)
+    model_id = ((session or {}).get("model_id", "") or "global").strip()
+    stored = memory_store.list_sessions_stored()
+    msg_count = next((s["messages"] for s in stored if s["session_id"] == session_id), 0)
+
+    # 长期记忆：LangGraph Store，namespace=("memories", model_id) 按模型隔离
+    facts = []
+    try:
+        store = langchain_agent._get_store()
+        ns = langchain_agent._memory_namespace(model_id)
+        facts = [
+            it.value.get("text", "")
+            for it in store.search(ns, limit=30)
+            if it.value.get("text")
+        ]
+    except Exception:
+        pass
+    return {
+        "session_id": session_id,
+        "in_ram": session is not None,
+        "model_id": model_id,
+        "memory_namespace": list(langchain_agent._memory_namespace(model_id)),
+        "short_term": {
+            "window": (session or {}).get("memory_window", 0),
+            "current_messages": len((session or {}).get("messages", [])),
+        },
+        "long_term": {
+            "persisted_messages": msg_count,
+            "facts": facts,
+        },
+    }
+
+
+@app.get("/chat/memory")
+def chat_memory_overview():
+    """全局记忆概览：会话历史 + 各模型记忆域事实统计（LangGraph Store，按模型隔离）。"""
+    from . import memory_store
+
+    sessions = memory_store.list_sessions_stored()
+    # Store 中各模型域的事实条数：namespace ("memories", model_id)
+    model_domains: dict = {}
+    try:
+        store = langchain_agent._get_store()
+        for it in store.search(("memories",), limit=500):
+            if len(it.namespace) >= 2:
+                mid = it.namespace[1]
+                model_domains[mid] = model_domains.get(mid, 0) + 1
+    except Exception:
+        pass
+    return {
+        "sessions_in_db": sessions,
+        "model_memory_domains": model_domains,
+    }
+
+
+@app.delete("/chat/memory/{scope}")
+def chat_memory_delete(scope: str, confirm: bool = False):
+    """清空指定模型记忆域的长期事实（LangGraph Store，按模型隔离）。
+
+    scope 此处为模型 id（记忆域），需 confirm=true 防误删。
+    """
+    if not confirm:
+        raise HTTPException(400, "需传 confirm=true 确认清除")
+    try:
+        store = langchain_agent._get_store()
+        ns = langchain_agent._memory_namespace(scope)
+        items = store.search(ns, limit=1000)
+        for it in items:
+            store.delete(ns, it.key)
+        return {"deleted_facts": len(items), "model_id": scope,
+                "memory_namespace": list(ns)}
+    except Exception as exc:
+        raise HTTPException(500, f"清除记忆失败: {exc}")
 
 
 @app.get("/chat/sessions")
@@ -579,6 +798,14 @@ def chat(req: ChatReq):
     except ValueError as exc:
         raise HTTPException(404, str(exc)) from exc
     except Exception as exc:
+        msg = str(exc)
+        # 无/错 API Key 时给出可操作提示，而非裸 500
+        if "401" in msg or "AuthenticationError" in msg or "api key" in msg.lower():
+            raise HTTPException(
+                500,
+                "对话 API 鉴权失败：请在 .env 或「⑬ 设置 · API Key」页配置有效的 "
+                "DEEPSEEK_API_KEY（申请: platform.deepseek.com）后重试。原始错误: " + msg[:200],
+            ) from exc
         raise HTTPException(500, f"Agent 对话失败: {exc}") from exc
 
 
@@ -652,7 +879,9 @@ def local_agent_delete_session(session_id: str):
 def local_agent_chat(req: ChatReq):
     """本地 ReAct Agent 对话：使用自己训练的模型 + RAG + 工具调用。
 
-    不依赖任何外部 API，完全本地运行。
+    生产级 v2：安全校验 -> 三层记忆 -> 四级解析 -> 工具沙箱 -> 循环控制。
+    返回 end_reason（completed/keyword-fallback/max_iterations/repeated/security_blocked）。
+    完全本地运行，不依赖任何外部 API。
     """
     try:
         return local_agent.chat(req.session_id, req.message)
@@ -660,6 +889,44 @@ def local_agent_chat(req: ChatReq):
         raise HTTPException(404, str(exc)) from exc
     except Exception as exc:
         raise HTTPException(500, f"本地 Agent 对话失败: {exc}") from exc
+
+
+@app.post("/local_agent/switch_model")
+def local_agent_switch_model(req: LocalAgentSwitchReq):
+    """适配器热插拔：会话中途切换底层模型（保留会话记忆）。
+
+    vLLM 多 LoRA 挂载时无需重启服务；transformers 路径走 _REAL_CACHE 复用。
+    """
+    try:
+        session = local_agent.switch_model(req.session_id, req.model_id)
+        return {
+            "session_id": session["session_id"],
+            "model_id": session["model_id"],
+            "switched_at": session.get("switched_at"),
+            "switch_history": session.get("switch_history", []),
+            "messages_kept": len(session.get("messages", [])),
+        }
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(500, f"切换模型失败: {exc}") from exc
+
+
+@app.get("/local_agent/eval/stats")
+def local_agent_eval_stats():
+    """Agent 测评统计：工具调用率/模型决策占比/修复次数/工具失败/结束原因分布。"""
+    return local_agent.eval_stats()
+
+
+@app.get("/local_agent/eval/events")
+def local_agent_eval_events(limit: int = 50):
+    """读取全链路事件日志（微调素材预览）：prompt快照/原始输出/工具耗时/失败原因。"""
+    try:
+        events = local_agent.read_events(limit=min(max(limit, 1), 200))
+    except AttributeError:
+        # 兼容：read_events 不存在时读文件
+        events = []
+    return {"events": events, "store": str(local_agent.EVENT_STORE)}
 
 
 # ---------------------------------------------------------------------------
@@ -698,6 +965,28 @@ def list_mcp_servers():
 def register_mcp_server(req: McpRegisterReq):
     """注册一个 MCP 服务器。"""
     return langchain_agent.register_mcp_server(req.name, req.command, req.description)
+
+
+@app.delete("/mcp/servers/{name}")
+def delete_mcp_server(name: str):
+    """删除一个已注册的 MCP 服务器。"""
+    try:
+        return langchain_agent.delete_mcp_server(name)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(500, f"删除 MCP 服务器失败: {exc}") from exc
+
+
+@app.post("/mcp/test")
+def test_mcp_server(req: McpTestReq):
+    """测试 MCP 服务器连通性（重新握手并刷新工具列表）。"""
+    try:
+        return langchain_agent.test_mcp_server(req.name)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(500, f"测试 MCP 服务器失败: {exc}") from exc
 
 
 # ---------------------------------------------------------------------------

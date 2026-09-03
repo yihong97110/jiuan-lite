@@ -265,8 +265,10 @@ def get_embedder():
         if want == "tfidf":
             _EMBEDDER = _TfidfEmbedder()
         else:
-            if not os.environ.get("HF_ENDPOINT") and os.environ.get("JIUAN_HF_MIRROR", "yes").lower() != "no":
-                os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
+            # 仅在未设离线模式时配置镜像；离线模式下走本地缓存，不联网校验
+            if not os.environ.get("HF_HUB_OFFLINE"):
+                if not os.environ.get("HF_ENDPOINT") and os.environ.get("JIUAN_HF_MIRROR", "yes").lower() != "no":
+                    os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
             try:
                 _EMBEDDER = _BgeEmbedder()
             except Exception as e:
